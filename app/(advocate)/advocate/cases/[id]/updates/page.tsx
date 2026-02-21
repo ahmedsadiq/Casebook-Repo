@@ -6,7 +6,7 @@ import AddUpdateForm from "./AddUpdateForm";
 export const metadata = { title: "Add Update" };
 
 export default async function AddUpdatePage({ params }: { params: { id: string } }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: c } = await supabase.from("cases").select("id,title,status")

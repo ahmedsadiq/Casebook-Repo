@@ -6,7 +6,7 @@ import CaseForm from "../../CaseForm";
 export const metadata = { title: "Edit Case" };
 
 export default async function EditCasePage({ params }: { params: { id: string } }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const [{ data: c }, { data: clients }] = await Promise.all([

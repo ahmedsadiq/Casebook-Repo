@@ -5,7 +5,7 @@ import Link from "next/link";
 export const metadata = { title: "New Case" };
 
 export default async function NewCasePage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: clients } = await supabase
