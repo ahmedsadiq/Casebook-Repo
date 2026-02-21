@@ -11,7 +11,7 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
 
   const [{ data: c }, { data: updates }, { data: docs }] = await Promise.all([
     supabase.from("cases")
-      .select("*,profiles(full_name,email,phone)")
+      .select("*")
       .eq("id", params.id).single(),
     supabase.from("case_updates")
       .select("*,profiles!case_updates_author_id_fkey(full_name,role)")
@@ -23,8 +23,13 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
 
   if (!c) notFound();
 
+  // Fetch client profile separately to avoid FK-join failures in production
+  const { data: clientProfile } = c.client_id
+    ? await supabase.from("profiles").select("full_name,email,phone").eq("id", c.client_id).single()
+    : { data: null };
+
   type AuthorRow = { full_name: string | null; role: string };
-  const client = c.profiles as unknown as { full_name: string | null; email: string | null; phone: string | null } | null;
+  const client = clientProfile as { full_name: string | null; email: string | null; phone: string | null } | null;
 
   return (
     <div className="pg-wrap">

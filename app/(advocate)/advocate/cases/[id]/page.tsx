@@ -19,7 +19,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
     { data: assignedRows },
   ] = await Promise.all([
     supabase.from("cases")
-      .select("*,profiles(id,full_name,email,phone)")
+      .select("*")
       .eq("id", params.id).eq("advocate_id", user!.id).single(),
     supabase.from("case_updates")
       .select("*,profiles!case_updates_author_id_fkey(full_name,role)")
@@ -39,12 +39,17 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
 
   if (!c) notFound();
 
+  // Fetch client profile separately to avoid FK-join failures in production
+  const { data: clientProfile } = c.client_id
+    ? await supabase.from("profiles").select("id,full_name,email,phone").eq("id", c.client_id).single()
+    : { data: null };
+
   type ClientRow    = { id: string; full_name: string | null; email: string | null; phone: string | null };
   type AuthorRow    = { full_name: string | null; role: string };
   type UploaderRow  = { full_name: string | null };
   type AssociateRow = { id: string; full_name: string | null; email: string | null };
 
-  const client   = c.profiles as unknown as ClientRow | null;
+  const client = clientProfile as ClientRow | null;
   const totalDue = payments?.filter(p => p.status !== "paid").reduce((s, p) => s + p.amount, 0) ?? 0;
 
   const assigned: AssociateRow[] = (assignedRows ?? []).map(row => {
