@@ -4,11 +4,15 @@ import Sidebar from "@/components/Sidebar";
 
 export default async function AdvocateLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth");
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) redirect("/auth");
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles").select("full_name, role").eq("id", user.id).single();
+
+  if (profileError) {
+    throw new Error(`Failed to load profile: ${profileError.message}`);
+  }
 
   if (profile?.role !== "advocate") redirect("/auth");
 
