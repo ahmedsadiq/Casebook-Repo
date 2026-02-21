@@ -10,7 +10,7 @@ import MarkPaidButton from "./MarkPaidButton";
 export const metadata = { title: "Payments" };
 
 export default async function PaymentsPage({ params }: { params: { id: string } }) {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const [{ data: c }, { data: payments }] = await Promise.all([

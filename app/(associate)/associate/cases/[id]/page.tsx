@@ -6,7 +6,7 @@ import { CaseStatusBadge } from "@/components/StatusBadge";
 import AddUpdateForm from "@/app/(advocate)/advocate/cases/[id]/updates/AddUpdateForm";
 
 export default async function AssociateCaseDetailPage({ params }: { params: { id: string } }) {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase

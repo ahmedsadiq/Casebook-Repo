@@ -6,7 +6,7 @@ import { CaseStatusBadge } from "@/components/StatusBadge";
 export const metadata = { title: "Cases" };
 
 export default async function AssociateCasesPage() {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase

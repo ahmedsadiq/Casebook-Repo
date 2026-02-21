@@ -6,7 +6,14 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(ssh:*)",
-      "Bash(gh auth status:*)"
+      "Bash(gh auth status:*)",
+      "WebFetch(domain:supabase.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx next build:*)",
+      "Bash(node_modules/.bin/next build:*)",
+      "Bash(npm install:*)",
+      "Bash(NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder SUPABASE_SERVICE_ROLE_KEY=placeholder node_modules/.bin/next build:*)",
+      "Bash(git rm:*)"
     ]
   }
 }
