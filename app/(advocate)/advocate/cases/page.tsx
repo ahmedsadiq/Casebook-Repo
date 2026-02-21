@@ -13,7 +13,7 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
 
   let query = supabase
     .from("cases")
-    .select("id,title,status,case_number,court,next_hearing_date,created_at,client_id,profiles!cases_client_id_fkey(full_name)")
+    .select("id,title,status,case_number,court,next_hearing_date,created_at,client_id,profiles(full_name)")
     .eq("advocate_id", user!.id)
     .order("created_at", { ascending: false });
 

@@ -14,7 +14,7 @@ export default async function AssociateCasesPage() {
 
   const { data: cases } = await supabase
     .from("cases")
-    .select("id,title,status,case_number,court,next_hearing_date,created_at,profiles!cases_client_id_fkey(full_name)")
+    .select("id,title,status,case_number,court,next_hearing_date,created_at,profiles(full_name)")
     .eq("advocate_id", profile!.advocate_id!)
     .order("updated_at", { ascending: false });
 

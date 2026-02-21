@@ -14,7 +14,7 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
 
   const [{ data: c }, { data: updates }, { data: docs }] = await Promise.all([
     supabase.from("cases")
-      .select("*,profiles!cases_client_id_fkey(full_name,email,phone)")
+      .select("*,profiles(full_name,email,phone)")
       .eq("id", params.id).eq("advocate_id", profile!.advocate_id!).single(),
     supabase.from("case_updates")
       .select("*,profiles!case_updates_author_id_fkey(full_name,role)")
