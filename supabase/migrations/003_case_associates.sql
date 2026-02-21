@@ -1,6 +1,7 @@
 -- =============================================================
--- case_associates: link specific associates to specific cases
--- Associates can only see cases they are explicitly assigned to.
+-- case_associates: optionally link associates to specific cases.
+-- This is informational only — existing associate access to all
+-- advocate cases is preserved unchanged.
 -- =============================================================
 
 -- -------------------------------------------------------
@@ -33,103 +34,6 @@ create policy "case_associates: associate view own"
   on public.case_associates for select
   using (associate_id = auth.uid());
 
--- -------------------------------------------------------
--- UPDATE CASES POLICIES FOR ASSOCIATES
--- (now use case_associates instead of advocate_id matching)
--- -------------------------------------------------------
-drop policy if exists "cases: associate view"   on public.cases;
-drop policy if exists "cases: associate update" on public.cases;
-
-create policy "cases: associate view"
-  on public.cases for select
-  using (
-    exists (
-      select 1 from public.case_associates
-      where case_id = id and associate_id = auth.uid()
-    )
-  );
-
-create policy "cases: associate update"
-  on public.cases for update
-  using (
-    exists (
-      select 1 from public.case_associates
-      where case_id = id and associate_id = auth.uid()
-    )
-  );
-
--- -------------------------------------------------------
--- UPDATE CASE_UPDATES POLICIES FOR ASSOCIATES
--- -------------------------------------------------------
-drop policy if exists "case_updates: associate insert and view" on public.case_updates;
-drop policy if exists "case_updates: associate insert"         on public.case_updates;
-
-create policy "case_updates: associate view"
-  on public.case_updates for select
-  using (
-    exists (
-      select 1 from public.case_associates
-      where case_id = case_updates.case_id and associate_id = auth.uid()
-    )
-  );
-
-create policy "case_updates: associate insert"
-  on public.case_updates for insert
-  with check (
-    author_id = auth.uid()
-    and exists (
-      select 1 from public.case_associates
-      where case_id = case_updates.case_id and associate_id = auth.uid()
-    )
-  );
-
--- -------------------------------------------------------
--- UPDATE CASE_DOCUMENTS POLICIES FOR ASSOCIATES
--- -------------------------------------------------------
-drop policy if exists "case_documents: associate insert and view" on public.case_documents;
-drop policy if exists "case_documents: associate insert"         on public.case_documents;
-
-create policy "case_documents: associate view"
-  on public.case_documents for select
-  using (
-    exists (
-      select 1 from public.case_associates
-      where case_id = case_documents.case_id and associate_id = auth.uid()
-    )
-  );
-
-create policy "case_documents: associate insert"
-  on public.case_documents for insert
-  with check (
-    uploader_id = auth.uid()
-    and exists (
-      select 1 from public.case_associates
-      where case_id = case_documents.case_id and associate_id = auth.uid()
-    )
-  );
-
--- -------------------------------------------------------
--- UPDATE STORAGE POLICY FOR ASSOCIATES
--- -------------------------------------------------------
-drop policy if exists "storage: associate access" on storage.objects;
-
-create policy "storage: associate access"
-  on storage.objects for all
-  using (
-    bucket_id = 'case-documents'
-    and exists (
-      select 1 from public.case_associates ca
-      join public.cases c on c.id = ca.case_id
-      where c.id::text = (storage.foldername(name))[1]
-        and ca.associate_id = auth.uid()
-    )
-  )
-  with check (
-    bucket_id = 'case-documents'
-    and exists (
-      select 1 from public.case_associates ca
-      join public.cases c on c.id = ca.case_id
-      where c.id::text = (storage.foldername(name))[1]
-        and ca.associate_id = auth.uid()
-    )
-  );
+-- NOTE: No changes to existing cases / case_updates / case_documents /
+-- storage policies. Associates continue to see all of their advocate's
+-- cases exactly as before.

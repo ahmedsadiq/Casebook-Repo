@@ -9,35 +9,26 @@ export default async function AssociateCasesPage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Fetch only cases this associate is explicitly assigned to
-  const { data: assignments } = await supabase
-    .from("case_associates")
-    .select("case_id")
-    .eq("associate_id", user!.id);
+  const { data: profile } = await supabase
+    .from("profiles").select("advocate_id").eq("id", user!.id).single();
 
-  const caseIds = assignments?.map(a => a.case_id) ?? [];
-
-  const { data: cases } = caseIds.length
-    ? await supabase
-        .from("cases")
-        .select("id,title,status,case_number,court,next_hearing_date,created_at,profiles(full_name)")
-        .in("id", caseIds)
-        .order("created_at", { ascending: false })
-    : { data: [] };
+  const { data: cases } = await supabase
+    .from("cases")
+    .select("id,title,status,case_number,court,next_hearing_date,created_at,profiles(full_name)")
+    .eq("advocate_id", profile!.advocate_id!)
+    .order("created_at", { ascending: false });
 
   return (
     <div className="pg-wrap">
       <div className="pg-head">
         <div>
-          <h1 className="pg-title">My Cases</h1>
-          <p className="pg-sub">{cases?.length ?? 0} case{cases?.length !== 1 ? "s" : ""} assigned to you</p>
+          <h1 className="pg-title">Cases</h1>
+          <p className="pg-sub">{cases?.length ?? 0} case{cases?.length !== 1 ? "s" : ""}</p>
         </div>
       </div>
       <div className="card">
         {!cases?.length ? (
-          <div className="py-16 text-center text-sm text-gray-400">
-            No cases assigned to you yet. Your advocate will assign cases to you.
-          </div>
+          <div className="py-16 text-center text-sm text-gray-400">No cases found.</div>
         ) : (
           <table className="w-full">
             <thead><tr className="thead"><th>Case</th><th>Client</th><th>Status</th><th>Next Hearing</th></tr></thead>
