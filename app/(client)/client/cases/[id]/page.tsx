@@ -5,7 +5,7 @@ import { formatDate, formatCurrency } from "@/lib/utils";
 import { CaseStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 
 export default async function ClientCaseDetailPage({ params }: { params: { id: string } }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const [{ data: c }, { data: updates }, { data: payments }] = await Promise.all([

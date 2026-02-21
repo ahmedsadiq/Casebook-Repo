@@ -4,7 +4,7 @@ import ProfileForm from "@/app/(advocate)/advocate/profile/ProfileForm";
 export const metadata = { title: "Profile" };
 
 export default async function AssociateProfilePage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase

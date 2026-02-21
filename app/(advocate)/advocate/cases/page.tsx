@@ -8,7 +8,7 @@ import type { CaseStatus } from "@/lib/supabase/types";
 export const metadata = { title: "Cases" };
 
 export default async function CasesPage({ searchParams }: { searchParams: { q?: string; status?: string } }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   let query = supabase
