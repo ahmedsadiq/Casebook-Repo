@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatDate, formatCurrency, formatFileSize } from "@/lib/utils";
 import { CaseStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import DeleteCaseButton from "./DeleteCaseButton";
+import ManageAssociatesPanel from "./ManageAssociatesPanel";
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
@@ -14,6 +15,8 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
     { data: updates },
     { data: payments },
     { data: docs },
+    { data: allAssociates },
+    { data: assignedRows },
   ] = await Promise.all([
     supabase.from("cases")
       .select("*,profiles(id,full_name,email,phone)")
@@ -26,16 +29,28 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
     supabase.from("case_documents")
       .select("*,profiles!case_documents_uploader_id_fkey(full_name)")
       .eq("case_id", params.id).order("created_at", { ascending: false }),
+    supabase.from("profiles")
+      .select("id,full_name,email")
+      .eq("advocate_id", user!.id).eq("role", "associate").order("full_name"),
+    supabase.from("case_associates")
+      .select("associate_id, profiles!case_associates_associate_id_fkey(id,full_name,email)")
+      .eq("case_id", params.id),
   ]);
 
   if (!c) notFound();
 
-  type ClientRow = { id: string; full_name: string | null; email: string | null; phone: string | null };
-  type AuthorRow = { full_name: string | null; role: string };
-  type UploaderRow = { full_name: string | null };
+  type ClientRow    = { id: string; full_name: string | null; email: string | null; phone: string | null };
+  type AuthorRow    = { full_name: string | null; role: string };
+  type UploaderRow  = { full_name: string | null };
+  type AssociateRow = { id: string; full_name: string | null; email: string | null };
 
-  const client = c.profiles as unknown as ClientRow | null;
+  const client   = c.profiles as unknown as ClientRow | null;
   const totalDue = payments?.filter(p => p.status !== "paid").reduce((s, p) => s + p.amount, 0) ?? 0;
+
+  const assigned: AssociateRow[] = (assignedRows ?? []).map(row => {
+    const p = row.profiles as unknown as AssociateRow | null;
+    return p ?? { id: row.associate_id, full_name: null, email: null };
+  });
 
   return (
     <div className="pg-wrap">
@@ -164,6 +179,13 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
               )}
             </div>
           </div>
+
+          {/* Assigned Associates */}
+          <ManageAssociatesPanel
+            caseId={c.id}
+            allAssociates={allAssociates ?? []}
+            assigned={assigned}
+          />
 
           {/* Payments */}
           <div className="card">

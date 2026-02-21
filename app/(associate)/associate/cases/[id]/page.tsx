@@ -9,13 +9,10 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
-    .from("profiles").select("advocate_id").eq("id", user!.id).single();
-
   const [{ data: c }, { data: updates }, { data: docs }] = await Promise.all([
     supabase.from("cases")
       .select("*,profiles(full_name,email,phone)")
-      .eq("id", params.id).eq("advocate_id", profile!.advocate_id!).single(),
+      .eq("id", params.id).single(),
     supabase.from("case_updates")
       .select("*,profiles!case_updates_author_id_fkey(full_name,role)")
       .eq("case_id", params.id).order("created_at", { ascending: false }),
