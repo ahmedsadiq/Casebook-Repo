@@ -6,7 +6,7 @@ import { CaseStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import DeleteCaseButton from "./DeleteCaseButton";
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const [

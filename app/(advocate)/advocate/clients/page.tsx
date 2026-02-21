@@ -6,7 +6,7 @@ import DeleteMemberButton from "../DeleteMemberButton";
 export const metadata = { title: "Clients" };
 
 export default async function ClientsPage() {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: clients } = await supabase
