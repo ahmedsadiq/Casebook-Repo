@@ -34,16 +34,26 @@ export default async function AssociatesPage() {
                 <p className="text-gray-400 text-xs mt-1">Use the form to invite an associate.</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead><tr className="thead"><th>Name</th><th>Email</th><th>Phone</th><th>Added</th><th></th></tr></thead>
+              <table className="w-full table-fixed">
+                <thead>
+                  <tr className="thead">
+                    <th className="w-[28%]">Name</th>
+                    <th className="w-[27%]">Email</th>
+                    <th className="w-[17%]">Phone</th>
+                    <th className="w-[15%]">Added</th>
+                    <th className="w-[13%]"></th>
+                  </tr>
+                </thead>
                 <tbody>
                   {associates.map(a => (
                     <tr key={a.id} className="trow">
                       <td className="tcell">
-                        <span className="font-medium text-gray-900">{a.full_name ?? "—"}</span>
-                        <span className="role-associate ml-2">associate</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-medium text-gray-900 truncate">{a.full_name ?? "—"}</span>
+                          <span className="role-associate shrink-0">associate</span>
+                        </div>
                       </td>
-                      <td className="tcell text-gray-600">{a.email ?? "—"}</td>
+                      <td className="tcell text-gray-600 truncate max-w-0">{a.email ?? "—"}</td>
                       <td className="tcell text-gray-500">{a.phone ?? "—"}</td>
                       <td className="tcell text-gray-400">{formatDate(a.created_at)}</td>
                       <td className="tcell text-right">

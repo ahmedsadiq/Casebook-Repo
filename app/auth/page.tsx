@@ -1,6 +1,7 @@
 import Image from "next/image";
 import AuthForm from "./AuthForm";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Sign In" };
 
 export default function AuthPage() {
