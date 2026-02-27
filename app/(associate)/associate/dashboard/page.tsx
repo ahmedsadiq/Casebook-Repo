@@ -57,7 +57,10 @@ export default async function AssociateDashboard() {
           <Link href="/associate/cases" className="text-sm text-navy-600 hover:underline">View all</Link>
         </div>
         {!cases?.length ? (
-          <div className="py-14 text-center text-sm text-gray-400">No cases found.</div>
+          <div className="py-14 text-center text-sm text-gray-400">
+            <p>No cases assigned to you yet.</p>
+            <p className="text-xs mt-1">Your advocate will assign you to cases from the case detail page.</p>
+          </div>
         ) : (
           <table className="w-full">
             <thead><tr className="thead"><th>Title</th><th>Status</th><th>Next Hearing</th></tr></thead>
