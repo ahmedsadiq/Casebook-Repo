@@ -67,14 +67,21 @@ export interface CaseUpdateWithAuthor extends CaseUpdate {
   author: Pick<Profile, "full_name" | "role"> | null;
 }
 
+export interface CaseAssociate {
+  case_id:      string;
+  associate_id: string;
+  added_at:     string;
+}
+
 export type Database = {
   public: {
     Tables: {
-      profiles:       { Row: Profile;      Insert: Partial<Profile> & { id: string }; Update: Partial<Profile> };
-      cases:          { Row: Case;         Insert: Omit<Case,"id"|"created_at"|"updated_at"> & { id?: string }; Update: Partial<Omit<Case,"id"|"advocate_id"|"created_at">> };
-      case_updates:   { Row: CaseUpdate;   Insert: Omit<CaseUpdate,"id"|"created_at"> & { id?: string }; Update: Partial<Pick<CaseUpdate,"content"|"hearing_date">> };
-      payments:       { Row: Payment;      Insert: Omit<Payment,"id"|"created_at"|"updated_at"> & { id?: string }; Update: Partial<Omit<Payment,"id"|"case_id"|"advocate_id"|"created_at">> };
-      case_documents: { Row: CaseDocument; Insert: Omit<CaseDocument,"id"|"created_at"> & { id?: string }; Update: never };
+      profiles:         { Row: Profile;       Insert: Partial<Profile> & { id: string }; Update: Partial<Profile> };
+      cases:            { Row: Case;          Insert: Omit<Case,"id"|"created_at"|"updated_at"> & { id?: string }; Update: Partial<Omit<Case,"id"|"advocate_id"|"created_at">> };
+      case_updates:     { Row: CaseUpdate;    Insert: Omit<CaseUpdate,"id"|"created_at"> & { id?: string }; Update: Partial<Pick<CaseUpdate,"content"|"hearing_date">> };
+      payments:         { Row: Payment;       Insert: Omit<Payment,"id"|"created_at"|"updated_at"> & { id?: string }; Update: Partial<Omit<Payment,"id"|"case_id"|"advocate_id"|"created_at">> };
+      case_documents:   { Row: CaseDocument;  Insert: Omit<CaseDocument,"id"|"created_at"> & { id?: string }; Update: never };
+      case_associates:  { Row: CaseAssociate; Insert: Omit<CaseAssociate,"added_at"> & { added_at?: string }; Update: never };
     };
   };
 };
