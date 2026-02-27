@@ -9,16 +9,24 @@ export default async function AssociateDashboard() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
-    .from("profiles").select("advocate_id, full_name").eq("id", user!.id).single();
+  // Get only cases this associate is assigned to
+  const { data: assigned } = await supabase
+    .from("case_associates")
+    .select("case_id")
+    .eq("associate_id", user!.id);
 
-  const [{ data: cases }, { data: allCases }] = await Promise.all([
-    supabase.from("cases")
-      .select("id,title,status,case_number,next_hearing_date")
-      .eq("advocate_id", profile!.advocate_id!)
-      .order("updated_at", { ascending: false }).limit(8),
-    supabase.from("cases").select("status").eq("advocate_id", profile!.advocate_id!),
-  ]);
+  const caseIds = (assigned ?? []).map(a => a.case_id);
+
+  const [{ data: cases }, { data: allCases }] = await (caseIds.length
+    ? Promise.all([
+        supabase.from("cases")
+          .select("id,title,status,case_number,next_hearing_date")
+          .in("id", caseIds)
+          .order("updated_at", { ascending: false }).limit(8),
+        supabase.from("cases").select("status").in("id", caseIds),
+      ])
+    : [{ data: [] as { id: string; title: string; status: string; case_number: string | null; next_hearing_date: string | null }[] },
+       { data: [] as { status: string }[] }]);
 
   const counts = {
     total:   allCases?.length ?? 0,

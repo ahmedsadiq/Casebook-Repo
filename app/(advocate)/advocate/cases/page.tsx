@@ -13,7 +13,7 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
 
   let query = supabase
     .from("cases")
-    .select("id,title,status,case_number,court,next_hearing_date,created_at,client_id,profiles(full_name)")
+    .select("id,title,status,case_number,court,next_hearing_date,created_at,client_id")
     .eq("advocate_id", user!.id)
     .order("created_at", { ascending: false });
 
@@ -24,6 +24,13 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
     query = query.ilike("title", `%${searchParams.q}%`);
 
   const { data: cases } = await query;
+
+  // Fetch client names separately to avoid FK-join failures in production
+  const clientIds = [...new Set((cases ?? []).map(c => c.client_id).filter(Boolean) as string[])];
+  const { data: clientProfiles } = clientIds.length
+    ? await supabase.from("profiles").select("id,full_name").in("id", clientIds)
+    : { data: [] };
+  const clientMap = Object.fromEntries((clientProfiles ?? []).map(p => [p.id, p.full_name]));
 
   return (
     <div className="pg-wrap">
@@ -56,14 +63,13 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
             </thead>
             <tbody>
               {cases.map(c => {
-                const client = c.profiles as unknown as { full_name: string | null } | null;
                 return (
                   <tr key={c.id} className="trow">
                     <td className="tcell">
                       <Link href={`/advocate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
                       {c.case_number && <p className="text-xs text-gray-400 mt-0.5">#{c.case_number} {c.court ? `· ${c.court}` : ""}</p>}
                     </td>
-                    <td className="tcell text-gray-600">{client?.full_name ?? <span className="text-gray-300">—</span>}</td>
+                    <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? <span className="text-gray-300">—</span>) : <span className="text-gray-300">—</span>}</td>
                     <td className="tcell"><CaseStatusBadge status={c.status} /></td>
                     <td className="tcell text-gray-500">{formatDate(c.next_hearing_date)}</td>
                     <td className="tcell text-right">
