@@ -31,6 +31,7 @@ create policy "cases: associate update"
 -- CASE_UPDATES
 -- -------------------------------------------------------
 drop policy if exists "case_updates: associate view"   on public.case_updates;
+drop policy if exists "case_updates: associate insert and view" on public.case_updates;
 drop policy if exists "case_updates: associate insert" on public.case_updates;
 
 create policy "case_updates: associate insert and view"
@@ -58,6 +59,7 @@ create policy "case_updates: associate insert"
 -- CASE_DOCUMENTS
 -- -------------------------------------------------------
 drop policy if exists "case_documents: associate view"   on public.case_documents;
+drop policy if exists "case_documents: associate insert and view" on public.case_documents;
 drop policy if exists "case_documents: associate insert" on public.case_documents;
 
 create policy "case_documents: associate insert and view"

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { CaseStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
+import TasksWidget from "@/components/TasksWidget";
 
 export const metadata = { title: "My Cases" };
 
@@ -12,9 +13,9 @@ export default async function ClientDashboard() {
   const { data: profile } = await supabase
     .from("profiles").select("advocate_id").eq("id", user!.id).single();
 
-  const [{ data: cases }, { data: advocate }, { data: associates }] = await Promise.all([
+  const [{ data: cases }, { data: advocate }, { data: associates }, { data: tasks }] = await Promise.all([
     supabase.from("cases")
-      .select("id,title,status,next_hearing_date,case_number,court")
+      .select("id,title,status,last_hearing_date,next_hearing_date,case_number,court")
       .eq("client_id", user!.id)
       .order("updated_at", { ascending: false }),
     supabase.from("profiles")
@@ -22,6 +23,7 @@ export default async function ClientDashboard() {
     supabase.from("profiles")
       .select("full_name,email,phone")
       .eq("advocate_id", profile!.advocate_id!).eq("role", "associate"),
+    supabase.from("tasks").select("id,title,due_date,completed,created_at").eq("user_id", user!.id).order("created_at", { ascending: false }),
   ]);
 
   // Get payments for client's cases
@@ -31,6 +33,8 @@ export default async function ClientDashboard() {
     : { data: [] };
 
   const pendingTotal = payments?.filter(p => p.status !== "paid").reduce((s, p) => s + p.amount, 0) ?? 0;
+  const nextCase = cases?.find(c => c.next_hearing_date);
+  const lastCase = cases?.find(c => c.last_hearing_date);
 
   return (
     <div className="pg-wrap">
@@ -41,13 +45,12 @@ export default async function ClientDashboard() {
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="card p-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Active Cases</p>
-          <p className="text-3xl font-bold text-navy-700 mt-1.5">{cases?.filter(c => c.status !== "closed").length ?? 0}</p>
+          <p className="text-3xl font-bold text-navy-700 mt-1.5">{cases?.filter(c => c.status !== "Disposed of").length ?? 0}</p>
         </div>
         <div className="card p-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Next Hearing</p>
-          <p className="text-base font-bold text-gray-900 mt-1.5">
-            {cases?.find(c => c.next_hearing_date) ? formatDate(cases.find(c => c.next_hearing_date)!.next_hearing_date) : "—"}
-          </p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Hearings</p>
+          <p className="text-sm font-semibold text-gray-900 mt-1.5">Last: {formatDate(lastCase?.last_hearing_date)}</p>
+          <p className="text-sm font-semibold text-gray-900 mt-1">Next: {formatDate(nextCase?.next_hearing_date)}</p>
         </div>
         <div className="card p-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Pending Dues</p>
@@ -63,7 +66,7 @@ export default async function ClientDashboard() {
               <div className="py-14 text-center text-sm text-gray-400">No cases assigned to you yet.</div>
             ) : (
               <table className="w-full">
-                <thead><tr className="thead"><th>Case</th><th>Status</th><th>Next Hearing</th></tr></thead>
+                <thead><tr className="thead"><th>Case</th><th>Status</th><th>Last Hearing</th><th>Next Hearing</th></tr></thead>
                 <tbody>
                   {cases.map(c => (
                     <tr key={c.id} className="trow">
@@ -72,6 +75,7 @@ export default async function ClientDashboard() {
                         {c.case_number && <p className="text-xs text-gray-400 mt-0.5">#{c.case_number} {c.court ? `· ${c.court}` : ""}</p>}
                       </td>
                       <td className="tcell"><CaseStatusBadge status={c.status} /></td>
+                      <td className="tcell text-gray-500">{formatDate(c.last_hearing_date)}</td>
                       <td className="tcell text-gray-500">{formatDate(c.next_hearing_date)}</td>
                     </tr>
                   ))}
@@ -98,6 +102,8 @@ export default async function ClientDashboard() {
               </table>
             </div>
           )}
+
+          <TasksWidget initialTasks={(tasks ?? []) as { id: string; title: string; due_date: string | null; completed: boolean; created_at: string }[]} />
         </div>
 
         <div className="space-y-5">
@@ -131,3 +137,4 @@ export default async function ClientDashboard() {
     </div>
   );
 }
+

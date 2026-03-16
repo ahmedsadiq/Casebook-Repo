@@ -10,6 +10,7 @@ const NAV: Record<UserRole, { href: string; label: string }[]> = {
   advocate: [
     { href: "/advocate/dashboard",  label: "Dashboard"  },
     { href: "/advocate/cases",      label: "Cases"      },
+    { href: "/advocate/calendar",   label: "Calendar"   },
     { href: "/advocate/clients",    label: "Clients"    },
     { href: "/advocate/associates", label: "Associates" },
     { href: "/advocate/profile",    label: "Profile"    },
@@ -17,11 +18,13 @@ const NAV: Record<UserRole, { href: string; label: string }[]> = {
   associate: [
     { href: "/associate/dashboard", label: "Dashboard" },
     { href: "/associate/cases",     label: "Cases"     },
+    { href: "/associate/calendar",  label: "Calendar"  },
     { href: "/associate/profile",   label: "Profile"   },
   ],
   client: [
     { href: "/client/dashboard", label: "Dashboard" },
     { href: "/client/cases",     label: "My Cases"  },
+    { href: "/client/calendar",  label: "Calendar"  },
     { href: "/client/profile",   label: "Profile"   },
   ],
 };
@@ -45,6 +48,9 @@ function ClientsIcon() {
 function UserIcon() {
   return <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 }
+function CalendarIcon() {
+  return <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path strokeLinecap="round" d="M8 2v4M16 2v4M3 10h18"/></svg>;
+}
 
 const ICON_MAP: Record<string, React.FC> = {
   Dashboard:  DashIcon,
@@ -53,6 +59,7 @@ const ICON_MAP: Record<string, React.FC> = {
   Clients:    ClientsIcon,
   Associates: ClientsIcon,
   Profile:    UserIcon,
+  Calendar:   CalendarIcon,
 };
 
 export default function Sidebar({ fullName, role }: { fullName: string | null; role: UserRole }) {

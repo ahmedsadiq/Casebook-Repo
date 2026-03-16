@@ -10,8 +10,8 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
   const { data: { user } } = await supabase.auth.getUser();
 
   const [{ data: c }, { data: updates }, { data: docs }] = await Promise.all([
-    supabase.from("cases")
-      .select("*")
+    supabase.from("case_with_alerts")
+      .select("*,needs_date_update")
       .eq("id", params.id).single(),
     supabase.from("case_updates")
       .select("*,profiles!case_updates_author_id_fkey(full_name,role)")
@@ -30,6 +30,7 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
 
   type AuthorRow = { full_name: string | null; role: string };
   const client = clientProfile as { full_name: string | null; email: string | null; phone: string | null } | null;
+  const needsUpdate = Boolean((c as { needs_date_update?: boolean }).needs_date_update);
 
   return (
     <div className="pg-wrap">
@@ -53,8 +54,21 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
             <div className="card-body grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Next Hearing</p>
-                <p className="font-semibold text-navy-700">{formatDate(c.next_hearing_date)}</p>
+                <p className={needsUpdate ? "font-semibold text-red-600" : "font-semibold text-navy-700"}>
+                  {formatDate(c.next_hearing_date)}
+                </p>
               </div>
+              <div>
+                <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Last Hearing</p>
+                <p className="text-gray-700">{formatDate(c.last_hearing_date)}</p>
+              </div>
+              {needsUpdate && (
+                <div className="col-span-2">
+                  <span className="inline-flex rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
+                    Action Required — Date Not Updated
+                  </span>
+                </div>
+              )}
               <div>
                 <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Filed</p>
                 <p className="text-gray-700">{formatDate(c.created_at)}</p>

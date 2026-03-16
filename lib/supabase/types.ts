@@ -1,5 +1,5 @@
 export type UserRole    = "advocate" | "associate" | "client";
-export type CaseStatus  = "open" | "pending" | "closed";
+export type CaseStatus  = "Pending" | "Decided" | "Disposed of" | "Date in Office" | "Rejected" | "Accepted";
 export type PaymentStatus = "pending" | "paid" | "overdue";
 
 export interface Profile {
@@ -22,6 +22,7 @@ export interface Case {
   status: CaseStatus;
   case_number: string | null;
   court: string | null;
+  last_hearing_date: string | null;
   next_hearing_date: string | null;
   created_at: string;
   updated_at: string;
@@ -58,6 +59,16 @@ export interface CaseDocument {
   created_at: string;
 }
 
+export interface Task {
+  id: string;
+  user_id: string;
+  title: string;
+  due_date: string | null;
+  completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // Helper join types
 export interface CaseWithClient extends Case {
   client: Pick<Profile, "id" | "full_name" | "email" | "phone"> | null;
@@ -82,6 +93,7 @@ export type Database = {
       payments:         { Row: Payment;       Insert: Omit<Payment,"id"|"created_at"|"updated_at"> & { id?: string }; Update: Partial<Omit<Payment,"id"|"case_id"|"advocate_id"|"created_at">> };
       case_documents:   { Row: CaseDocument;  Insert: Omit<CaseDocument,"id"|"created_at"> & { id?: string }; Update: never };
       case_associates:  { Row: CaseAssociate; Insert: Omit<CaseAssociate,"added_at"> & { added_at?: string }; Update: never };
+      tasks:            { Row: Task;          Insert: Omit<Task,"id"|"created_at"|"updated_at"> & { id?: string }; Update: Partial<Omit<Task,"id"|"user_id"|"created_at">> };
     };
   };
 };
