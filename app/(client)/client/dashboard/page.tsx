@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { formatDate, formatCurrency, normalizeCaseStatus } from "@/lib/utils";
 import { CaseStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import TasksWidget from "@/components/TasksWidget";
 
@@ -13,9 +13,9 @@ export default async function ClientDashboard() {
   const { data: profile } = await supabase
     .from("profiles").select("advocate_id").eq("id", user!.id).single();
 
-  const [{ data: cases }, { data: advocate }, { data: associates }, { data: tasks }] = await Promise.all([
+  const [{ data: rawCases }, { data: advocate }, { data: associates }, { data: tasks }] = await Promise.all([
     supabase.from("cases")
-      .select("id,title,status,last_hearing_date,next_hearing_date,case_number,court")
+      .select("*")
       .eq("client_id", user!.id)
       .order("updated_at", { ascending: false }),
     supabase.from("profiles")
@@ -26,15 +26,19 @@ export default async function ClientDashboard() {
     supabase.from("tasks").select("id,title,due_date,completed,created_at").eq("user_id", user!.id).order("created_at", { ascending: false }),
   ]);
 
-  // Get payments for client's cases
-  const caseIds = cases?.map(c => c.id) ?? [];
+  const cases = (rawCases ?? []).map(c => ({
+    ...c,
+    status: normalizeCaseStatus(c.status),
+  }));
+
+  const caseIds = cases.map(c => c.id);
   const { data: payments } = caseIds.length
     ? await supabase.from("payments").select("*").in("case_id", caseIds).order("due_date")
     : { data: [] };
 
   const pendingTotal = payments?.filter(p => p.status !== "paid").reduce((s, p) => s + p.amount, 0) ?? 0;
-  const nextCase = cases?.find(c => c.next_hearing_date);
-  const lastCase = cases?.find(c => c.last_hearing_date);
+  const nextCase = cases.find(c => c.next_hearing_date);
+  const lastCase = cases.find(c => c.last_hearing_date);
 
   return (
     <div className="pg-wrap">
@@ -45,7 +49,7 @@ export default async function ClientDashboard() {
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="card p-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Active Cases</p>
-          <p className="text-3xl font-bold text-navy-700 mt-1.5">{cases?.filter(c => c.status !== "Disposed of").length ?? 0}</p>
+          <p className="text-3xl font-bold text-navy-700 mt-1.5">{cases.filter(c => c.status !== "Disposed of").length}</p>
         </div>
         <div className="card p-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Hearings</p>
@@ -62,7 +66,7 @@ export default async function ClientDashboard() {
         <div className="col-span-2 space-y-6">
           <div className="card">
             <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Your Cases</h2></div>
-            {!cases?.length ? (
+            {!cases.length ? (
               <div className="py-14 text-center text-sm text-gray-400">No cases assigned to you yet.</div>
             ) : (
               <table className="w-full">
@@ -137,4 +141,3 @@ export default async function ClientDashboard() {
     </div>
   );
 }
-

@@ -1,8 +1,40 @@
+import type { CaseStatus } from "@/lib/supabase/types";
+
 export function formatDate(d: string | null | undefined): string {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-IN", {
     day: "numeric", month: "short", year: "numeric",
   });
+}
+
+export function normalizeCaseStatus(status: string | null | undefined): CaseStatus {
+  const value = status?.trim();
+
+  if (
+    value === "Pending" ||
+    value === "Decided" ||
+    value === "Disposed of" ||
+    value === "Date in Office" ||
+    value === "Rejected" ||
+    value === "Accepted"
+  ) {
+    return value;
+  }
+
+  if (value === "open" || value === "Open" || value === "pending" || value === "Pending") {
+    return "Pending";
+  }
+
+  if (value === "closed" || value === "Closed") {
+    return "Disposed of";
+  }
+
+  return "Pending";
+}
+
+export function isActiveCaseStatus(status: string | null | undefined): boolean {
+  const normalized = normalizeCaseStatus(status);
+  return normalized === "Pending" || normalized === "Date in Office";
 }
 
 export function isDateUpdateRequired(nextHearingDate: string | null | undefined): boolean {

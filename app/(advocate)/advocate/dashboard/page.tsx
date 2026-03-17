@@ -1,12 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { formatDate, formatCurrency, isActiveCaseStatus, isDateUpdateRequired, normalizeCaseStatus } from "@/lib/utils";
 import { CaseStatusBadge } from "@/components/StatusBadge";
 import TasksWidget from "@/components/TasksWidget";
 
 export const metadata = { title: "Dashboard" };
-
-const ACTIVE_STATUSES = ["Pending", "Date in Office"] as const;
 
 export default async function AdvocateDashboard() {
   const supabase = createClient();
@@ -14,36 +12,35 @@ export default async function AdvocateDashboard() {
   const today = new Date().toISOString().slice(0, 10);
 
   const [
-    { data: todayCasesRaw },
-    { data: pendingCasesRaw },
-    { data: recentCases },
-    { data: allCases },
+    { data: rawCases },
     { data: clients },
     { data: associates },
     { data: payments },
     { data: tasks },
   ] = await Promise.all([
-    supabase.from("case_with_alerts")
-      .select("id,title,status,case_number,court,client_id,next_hearing_date,needs_date_update")
-      .eq("advocate_id", user!.id)
-      .eq("next_hearing_date", today)
-      .order("next_hearing_date", { ascending: true }),
-    supabase.from("case_with_alerts")
-      .select("id,title,status,case_number,court,client_id,next_hearing_date,needs_date_update")
-      .eq("advocate_id", user!.id)
-      .in("status", ACTIVE_STATUSES as unknown as string[])
-      .order("next_hearing_date", { ascending: true }),
-    supabase.from("case_with_alerts").select("id,title,status,case_number,last_hearing_date,next_hearing_date,created_at,needs_date_update")
-      .eq("advocate_id", user!.id).order("created_at", { ascending: false }).limit(5),
-    supabase.from("cases").select("status").eq("advocate_id", user!.id),
+    supabase.from("cases").select("*").eq("advocate_id", user!.id).order("created_at", { ascending: false }),
     supabase.from("profiles").select("id").eq("advocate_id", user!.id).eq("role", "client"),
     supabase.from("profiles").select("id").eq("advocate_id", user!.id).eq("role", "associate"),
     supabase.from("payments").select("status,amount").eq("advocate_id", user!.id),
     supabase.from("tasks").select("id,title,due_date,completed,created_at").eq("user_id", user!.id).order("created_at", { ascending: false }),
   ]);
 
-  const todayCases = todayCasesRaw ?? [];
-  const pendingCases = pendingCasesRaw ?? [];
+  const cases = (rawCases ?? []).map(c => ({
+    ...c,
+    status: normalizeCaseStatus(c.status),
+    needs_date_update: isDateUpdateRequired(c.next_hearing_date),
+  }));
+
+  const todayCases = cases
+    .filter(c => c.next_hearing_date === today)
+    .sort((a, b) => (a.next_hearing_date ?? "").localeCompare(b.next_hearing_date ?? ""));
+  const pendingCases = cases
+    .filter(c => isActiveCaseStatus(c.status))
+    .sort((a, b) => (a.next_hearing_date ?? "").localeCompare(b.next_hearing_date ?? ""));
+  const recentCases = [...cases]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 5);
+
   const clientIds = [...new Set([...todayCases, ...pendingCases].map(c => c.client_id).filter(Boolean) as string[])];
   const { data: clientProfiles } = clientIds.length
     ? await supabase.from("profiles").select("id,full_name").in("id", clientIds)
@@ -51,10 +48,10 @@ export default async function AdvocateDashboard() {
   const clientMap = Object.fromEntries((clientProfiles ?? []).map(p => [p.id, p.full_name]));
 
   const counts = {
-    total:    allCases?.length ?? 0,
-    pending:  allCases?.filter(c => c.status === "Pending").length ?? 0,
-    decided:  allCases?.filter(c => c.status === "Decided").length ?? 0,
-    disposed: allCases?.filter(c => c.status === "Disposed of").length ?? 0,
+    total: cases.length,
+    pending: cases.filter(c => c.status === "Pending").length,
+    decided: cases.filter(c => c.status === "Decided").length,
+    disposed: cases.filter(c => c.status === "Disposed of").length,
   };
   const overdue = payments?.filter(p => p.status === "overdue").reduce((s, p) => s + p.amount, 0) ?? 0;
   const pending = payments?.filter(p => p.status === "pending").reduce((s, p) => s + p.amount, 0) ?? 0;
@@ -72,7 +69,6 @@ export default async function AdvocateDashboard() {
         </div>
       </div>
 
-      {/* Today's cases */}
       <div className="card mb-6">
         <div className="card-header">
           <h2 className="text-sm font-semibold text-gray-800">Today's Cases</h2>
@@ -100,7 +96,6 @@ export default async function AdvocateDashboard() {
         )}
       </div>
 
-      {/* Pending cases */}
       <div className="card mb-6">
         <div className="card-header">
           <h2 className="text-sm font-semibold text-gray-800">All Pending Cases</h2>
@@ -121,7 +116,7 @@ export default async function AdvocateDashboard() {
                   <td className="tcell text-gray-600">{c.court ?? "—"}</td>
                   <td className="tcell text-gray-600">{c.case_number ?? "—"}</td>
                   <td className="tcell"><CaseStatusBadge status={c.status} /></td>
-                  <td className={`tcell ${(c as { needs_date_update?: boolean }).needs_date_update ? "text-red-600 font-semibold" : "text-gray-500"}`}>
+                  <td className={`tcell ${c.needs_date_update ? "text-red-600 font-semibold" : "text-gray-500"}`}>
                     {formatDate(c.next_hearing_date)}
                   </td>
                 </tr>
@@ -131,12 +126,11 @@ export default async function AdvocateDashboard() {
         )}
       </div>
 
-      {/* Case stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total Cases", value: counts.total,    color: "text-gray-900" },
-          { label: "Pending",     value: counts.pending,  color: "text-amber-600" },
-          { label: "Decided",     value: counts.decided,  color: "text-navy-700" },
+          { label: "Total Cases", value: counts.total, color: "text-gray-900" },
+          { label: "Pending", value: counts.pending, color: "text-amber-600" },
+          { label: "Decided", value: counts.decided, color: "text-navy-700" },
           { label: "Disposed of", value: counts.disposed, color: "text-gray-400" },
         ].map(({ label, value, color }) => (
           <div key={label} className="card p-5">
@@ -146,7 +140,6 @@ export default async function AdvocateDashboard() {
         ))}
       </div>
 
-      {/* People + payments */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="card p-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Clients</p>
@@ -168,13 +161,12 @@ export default async function AdvocateDashboard() {
         </div>
       </div>
 
-      {/* Recent cases */}
       <div className="card">
         <div className="card-header">
           <h2 className="text-sm font-semibold text-gray-800">Recent Cases</h2>
           <Link href="/advocate/cases" className="text-sm text-navy-600 hover:underline">View all →</Link>
         </div>
-        {!recentCases?.length ? (
+        {!recentCases.length ? (
           <div className="py-14 text-center">
             <p className="text-gray-400 text-sm mb-3">No cases yet.</p>
             <Link href="/advocate/cases/new" className="btn-primary btn-sm inline-flex">Create your first case</Link>
@@ -188,7 +180,7 @@ export default async function AdvocateDashboard() {
                   <td className="tcell">
                     <Link href={`/advocate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
                     {c.case_number && <p className="text-xs text-gray-400 mt-0.5">#{c.case_number}</p>}
-                    {(c as { needs_date_update?: boolean }).needs_date_update && (
+                    {c.needs_date_update && (
                       <span className="inline-flex mt-1.5 rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
                         Action Required
                       </span>
@@ -196,7 +188,7 @@ export default async function AdvocateDashboard() {
                   </td>
                   <td className="tcell"><CaseStatusBadge status={c.status} /></td>
                   <td className="tcell text-gray-500">{formatDate(c.last_hearing_date)}</td>
-                  <td className={`tcell ${(c as { needs_date_update?: boolean }).needs_date_update ? "text-red-600 font-semibold" : "text-gray-500"}`}>
+                  <td className={`tcell ${c.needs_date_update ? "text-red-600 font-semibold" : "text-gray-500"}`}>
                     {formatDate(c.next_hearing_date)}
                   </td>
                   <td className="tcell text-gray-400">{formatDate(c.created_at)}</td>
