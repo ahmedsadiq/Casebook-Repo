@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import BillingCheckoutButton from "@/components/BillingCheckoutButton";
+import SignOutButton from "@/components/SignOutButton";
 import { getAdvocatePlanPricing } from "@/lib/advocate-billing";
 import {
   formatSubscriptionStatus,
@@ -90,9 +90,7 @@ export default async function BillingPage({
 
           <div className="mt-6 text-sm text-gray-500">
             Need to sign in with a different account?{" "}
-            <Link href="/auth" className="font-medium text-navy-700 hover:underline">
-              Go back to sign in
-            </Link>
+            <SignOutButton label="Sign out and go to sign in" />
           </div>
         </div>
       </div>
