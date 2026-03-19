@@ -32,9 +32,12 @@ export default function CasesFilter({
       <select className="input w-44" value={status}
         onChange={e => { setStatus(e.target.value); apply(q, e.target.value); }}>
         <option value="">All statuses</option>
-        <option value="open">Open</option>
-        <option value="pending">Pending</option>
-        <option value="closed">Closed</option>
+        <option value="Pending">Pending</option>
+        <option value="Decided">Decided</option>
+        <option value="Disposed of">Disposed of</option>
+        <option value="Date in Office">Date in Office</option>
+        <option value="Rejected">Rejected</option>
+        <option value="Accepted">Accepted</option>
       </select>
     </div>
   );

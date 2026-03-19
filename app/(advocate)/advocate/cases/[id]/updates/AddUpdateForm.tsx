@@ -22,6 +22,21 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState<string | null>(null);
 
+  function getErrorMessage(err: unknown): string {
+    if (!err) return "Something went wrong.";
+    if (typeof err === "string") return err;
+    const e = err as { message?: string; details?: string; hint?: string; code?: string };
+    if (e.code === "AUTH") return "You must be signed in to save an update.";
+    if (e.code === "42501") return "You do not have permission to update this case.";
+    if (e.code === "42P17" || e.message?.toLowerCase().includes("infinite recursion")) {
+      return "Database policy recursion detected. Run the RLS fix migration (supabase/migrations/007_fix_rls_recursion.sql) and try again.";
+    }
+    if (e.code === "23502") return "Missing required fields. Please fill all required inputs.";
+    if (e.message?.toLowerCase().includes("jwt")) return "Your session expired. Please sign in again.";
+    if (e.message?.toLowerCase().includes("network")) return "Network error. Please try again.";
+    return e.details || e.message || "Something went wrong.";
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!content.trim()) { setError("Please enter an update note."); return; }
@@ -30,7 +45,7 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!user) throw { code: "AUTH" };
 
       // 1. Insert case update
       const { error: updateError } = await supabase.from("case_updates").insert({
@@ -41,14 +56,30 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
       });
       if (updateError) throw updateError;
 
-      // 2. Update case status if changed
-      if (newStatus !== currentStatus) {
+      // 2. Update case status / hearing dates
+      let previousNext: string | null = null;
+      if (hearingDate) {
+        const { data: currentCase, error: currentCaseError } = await supabase
+          .from("cases")
+          .select("next_hearing_date")
+          .eq("id", caseId)
+          .single();
+        if (currentCaseError) throw currentCaseError;
+        previousNext = currentCase?.next_hearing_date ?? null;
+      }
+
+      const updatePayload: { status?: CaseStatus; next_hearing_date?: string | null; last_hearing_date?: string | null } = {};
+      if (newStatus !== currentStatus) updatePayload.status = newStatus;
+      if (hearingDate) {
+        updatePayload.next_hearing_date = hearingDate;
+        if (previousNext !== hearingDate) updatePayload.last_hearing_date = previousNext;
+      }
+
+      if (Object.keys(updatePayload).length) {
         const { error: statusError } = await supabase.from("cases")
-          .update({ status: newStatus, next_hearing_date: hearingDate || undefined })
+          .update(updatePayload)
           .eq("id", caseId);
         if (statusError) throw statusError;
-      } else if (hearingDate) {
-        await supabase.from("cases").update({ next_hearing_date: hearingDate }).eq("id", caseId);
       }
 
       // 3. Upload document if provided
@@ -72,7 +103,7 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
       router.push(redirectPath);
       router.refresh();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -93,9 +124,12 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
         <div>
           <label className="label">Update case status</label>
           <select className="input" value={newStatus} onChange={e => setNewStatus(e.target.value as CaseStatus)}>
-            <option value="open">Open</option>
-            <option value="pending">Pending</option>
-            <option value="closed">Closed</option>
+            <option value="Pending">Pending</option>
+            <option value="Decided">Decided</option>
+            <option value="Disposed of">Disposed of</option>
+            <option value="Date in Office">Date in Office</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Accepted">Accepted</option>
           </select>
           {newStatus !== currentStatus && (
             <p className="text-xs text-amber-600 mt-1">Status will change from <strong>{currentStatus}</strong> to <strong>{newStatus}</strong></p>

@@ -20,8 +20,26 @@ export default function AuthForm() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      const { data: profile } = await supabase
-        .from("profiles").select("role").eq("id", data.user.id).single();
+      let { data: profile, error: profileError } = await supabase
+        .from("profiles").select("role").eq("id", data.user.id).maybeSingle();
+      if (profileError) throw profileError;
+
+      if (!profile) {
+        const { error: insertError } = await supabase.from("profiles").insert({
+          id: data.user.id,
+          email: data.user.email ?? null,
+          full_name: typeof data.user.user_metadata?.full_name === "string"
+            ? data.user.user_metadata.full_name
+            : null,
+          role: "advocate",
+        });
+        if (insertError) throw insertError;
+
+        const { data: createdProfile, error: createdProfileError } = await supabase
+          .from("profiles").select("role").eq("id", data.user.id).maybeSingle();
+        if (createdProfileError) throw createdProfileError;
+        profile = createdProfile;
+      }
 
       if (profile?.role === "associate") router.push("/associate/dashboard");
       else if (profile?.role === "client") router.push("/client/dashboard");
