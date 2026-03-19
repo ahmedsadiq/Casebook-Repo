@@ -1,14 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { formatDate, formatCurrency, normalizeCaseStatus } from "@/lib/utils";
+import { formatDate, formatCurrency } from "@/lib/utils";
 import { CaseStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 
 export default async function ClientCaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: rawCase }, { data: updates }, { data: payments }] = await Promise.all([
+  const [{ data: c }, { data: updates }, { data: payments }] = await Promise.all([
     supabase.from("cases")
       .select("*")
       .eq("id", params.id).eq("client_id", user!.id).single(),
@@ -19,12 +19,7 @@ export default async function ClientCaseDetailPage({ params }: { params: { id: s
       .select("*").eq("case_id", params.id).order("due_date"),
   ]);
 
-  if (!rawCase) notFound();
-
-  const c = {
-    ...rawCase,
-    status: normalizeCaseStatus(rawCase.status),
-  };
+  if (!c) notFound();
 
   type AuthorRow = { full_name: string | null; role: string };
   const totalDue = payments?.filter(p => p.status !== "paid").reduce((s, p) => s + p.amount, 0) ?? 0;
@@ -43,6 +38,7 @@ export default async function ClientCaseDetailPage({ params }: { params: { id: s
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-6">
+          {/* Case info */}
           <div className="card">
             <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Case Details</h2></div>
             <div className="card-body grid grid-cols-2 gap-4 text-sm">
@@ -67,6 +63,7 @@ export default async function ClientCaseDetailPage({ params }: { params: { id: s
             </div>
           </div>
 
+          {/* Progress updates */}
           <div className="card">
             <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Case Progress</h2></div>
             {!updates?.length ? (
@@ -96,6 +93,7 @@ export default async function ClientCaseDetailPage({ params }: { params: { id: s
           </div>
         </div>
 
+        {/* Payment sidebar */}
         <div className="space-y-5">
           {payments && payments.length > 0 && (
             <div className="card">

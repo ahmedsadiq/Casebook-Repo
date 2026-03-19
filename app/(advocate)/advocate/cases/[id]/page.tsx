@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { formatDate, formatCurrency, formatFileSize, isDateUpdateRequired, normalizeCaseStatus } from "@/lib/utils";
+import { formatDate, formatCurrency, formatFileSize } from "@/lib/utils";
 import { CaseStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import DeleteCaseButton from "./DeleteCaseButton";
 import ManageAssociatesPanel from "./ManageAssociatesPanel";
@@ -11,14 +11,16 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
   const { data: { user } } = await supabase.auth.getUser();
 
   const [
-    { data: rawCase },
+    { data: c },
     { data: updates },
     { data: payments },
     { data: docs },
     { data: allAssociates },
     { data: assignedRows },
   ] = await Promise.all([
-    supabase.from("cases").select("*").eq("id", params.id).eq("advocate_id", user!.id).single(),
+    supabase.from("case_with_alerts")
+      .select("*,needs_date_update")
+      .eq("id", params.id).eq("advocate_id", user!.id).single(),
     supabase.from("case_updates")
       .select("*,profiles!case_updates_author_id_fkey(full_name,role)")
       .eq("case_id", params.id).order("created_at", { ascending: false }),
@@ -35,21 +37,16 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
       .eq("case_id", params.id),
   ]);
 
-  if (!rawCase) notFound();
+  if (!c) notFound();
 
-  const c = {
-    ...rawCase,
-    status: normalizeCaseStatus(rawCase.status),
-    needs_date_update: isDateUpdateRequired(rawCase.next_hearing_date),
-  };
-
+  // Fetch client profile separately to avoid FK-join failures in production
   const { data: clientProfile } = c.client_id
     ? await supabase.from("profiles").select("id,full_name,email,phone").eq("id", c.client_id).single()
     : { data: null };
 
-  type ClientRow = { id: string; full_name: string | null; email: string | null; phone: string | null };
-  type AuthorRow = { full_name: string | null; role: string };
-  type UploaderRow = { full_name: string | null };
+  type ClientRow    = { id: string; full_name: string | null; email: string | null; phone: string | null };
+  type AuthorRow    = { full_name: string | null; role: string };
+  type UploaderRow  = { full_name: string | null };
   type AssociateRow = { id: string; full_name: string | null; email: string | null };
 
   const client = clientProfile as ClientRow | null;
@@ -59,9 +56,11 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
     const p = row.profiles as unknown as AssociateRow | null;
     return p ?? { id: row.associate_id, full_name: null, email: null };
   });
+  const needsUpdate = Boolean((c as { needs_date_update?: boolean }).needs_date_update);
 
   return (
     <div className="pg-wrap">
+      {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
           <Link href="/advocate/cases" className="text-sm text-gray-400 hover:text-gray-600 mb-1.5 inline-block">← Cases</Link>
@@ -80,13 +79,15 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
       </div>
 
       <div className="grid grid-cols-3 gap-6">
+        {/* Main column */}
         <div className="col-span-2 space-y-6">
+          {/* Details */}
           <div className="card">
             <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Case Details</h2></div>
             <div className="card-body grid grid-cols-2 gap-5 text-sm">
               <div>
                 <p className="text-xs text-gray-400 mb-0.5 font-medium uppercase tracking-wide">Next Hearing</p>
-                <p className={c.needs_date_update ? "font-semibold text-red-600" : "font-semibold text-gray-900"}>
+                <p className={needsUpdate ? "font-semibold text-red-600" : "font-semibold text-gray-900"}>
                   {formatDate(c.next_hearing_date)}
                 </p>
               </div>
@@ -94,7 +95,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                 <p className="text-xs text-gray-400 mb-0.5 font-medium uppercase tracking-wide">Last Hearing</p>
                 <p className="text-gray-700">{formatDate(c.last_hearing_date)}</p>
               </div>
-              {c.needs_date_update && (
+              {needsUpdate && (
                 <div className="col-span-2">
                   <span className="inline-flex rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
                     Action Required — Date Not Updated
@@ -118,6 +119,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             </div>
           </div>
 
+          {/* Updates */}
           <div className="card">
             <div className="card-header">
               <h2 className="text-sm font-semibold text-gray-700">Case Updates</h2>
@@ -149,6 +151,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             )}
           </div>
 
+          {/* Documents */}
           <div className="card">
             <div className="card-header">
               <h2 className="text-sm font-semibold text-gray-700">Documents</h2>
@@ -177,7 +180,9 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
           </div>
         </div>
 
+        {/* Right sidebar */}
         <div className="space-y-5">
+          {/* Client card */}
           <div className="card">
             <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Client</h2></div>
             <div className="card-body text-sm">
@@ -194,12 +199,14 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             </div>
           </div>
 
+          {/* Assigned Associates */}
           <ManageAssociatesPanel
             caseId={c.id}
             allAssociates={allAssociates ?? []}
             assigned={assigned}
           />
 
+          {/* Payments */}
           <div className="card">
             <div className="card-header">
               <h2 className="text-sm font-semibold text-gray-700">Payments</h2>

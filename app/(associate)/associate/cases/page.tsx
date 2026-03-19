@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { formatDate, isDateUpdateRequired, normalizeCaseStatus } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { CaseStatusBadge } from "@/components/StatusBadge";
 
 export const metadata = { title: "Cases" };
@@ -9,6 +9,7 @@ export default async function AssociateCasesPage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Get only cases this associate is assigned to via case_associates
   const { data: assigned } = await supabase
     .from("case_associates")
     .select("case_id")
@@ -18,34 +19,30 @@ export default async function AssociateCasesPage() {
 
   const { data: rawCases } = caseIds.length
     ? await supabase
-        .from("cases")
-        .select("*")
+        .from("case_with_alerts")
+        .select("id,title,status,case_number,court,last_hearing_date,next_hearing_date,created_at,client_id,needs_date_update")
         .in("id", caseIds)
         .order("created_at", { ascending: false })
     : { data: [] };
 
-  const cases = (rawCases ?? []).map(c => ({
-    ...c,
-    status: normalizeCaseStatus(c.status),
-    needs_date_update: isDateUpdateRequired(c.next_hearing_date),
-  }));
-
-  const clientIds = [...new Set(cases.map(c => c.client_id).filter(Boolean) as string[])];
+  // Fetch client names separately to avoid FK-join failures in production
+  const clientIds = [...new Set((rawCases ?? []).map(c => c.client_id).filter(Boolean) as string[])];
   const { data: clientProfiles } = clientIds.length
     ? await supabase.from("profiles").select("id,full_name").in("id", clientIds)
     : { data: [] };
   const clientMap = Object.fromEntries((clientProfiles ?? []).map(p => [p.id, p.full_name]));
+  const cases = rawCases;
 
   return (
     <div className="pg-wrap">
       <div className="pg-head">
         <div>
           <h1 className="pg-title">Cases</h1>
-          <p className="pg-sub">{cases.length} case{cases.length !== 1 ? "s" : ""}</p>
+          <p className="pg-sub">{cases?.length ?? 0} case{cases?.length !== 1 ? "s" : ""}</p>
         </div>
       </div>
       <div className="card">
-        {!cases.length ? (
+        {!cases?.length ? (
           <div className="py-16 text-center text-sm text-gray-400">
             <p>No cases assigned to you yet.</p>
             <p className="text-xs mt-1">Your advocate will assign you to cases from the case detail page.</p>
@@ -54,8 +51,8 @@ export default async function AssociateCasesPage() {
           <table className="w-full">
             <thead><tr className="thead"><th>Case</th><th>Client</th><th>Status</th><th>Last Hearing</th><th>Next Hearing</th></tr></thead>
             <tbody>
-              {cases.map(c => {
-                const needsUpdate = Boolean(c.needs_date_update);
+              {(cases ?? []).map(c => {
+                const needsUpdate = Boolean((c as { needs_date_update?: boolean }).needs_date_update);
                 return (
                   <tr key={c.id} className="trow">
                     <td className="tcell">

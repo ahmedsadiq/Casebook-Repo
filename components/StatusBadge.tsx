@@ -1,5 +1,4 @@
 import type { CaseStatus, PaymentStatus } from "@/lib/supabase/types";
-import { normalizeCaseStatus } from "@/lib/utils";
 
 const CASE_STATUS_CLASS: Record<CaseStatus, string> = {
   "Pending": "badge-pending",
@@ -11,9 +10,8 @@ const CASE_STATUS_CLASS: Record<CaseStatus, string> = {
 };
 
 export function CaseStatusBadge({ status }: { status: CaseStatus }) {
-  const normalizedStatus = normalizeCaseStatus(status);
-  const cls = CASE_STATUS_CLASS[normalizedStatus];
-  return <span className={cls}>{normalizedStatus}</span>;
+  const cls = CASE_STATUS_CLASS[status];
+  return <span className={cls}>{status}</span>;
 }
 
 export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {

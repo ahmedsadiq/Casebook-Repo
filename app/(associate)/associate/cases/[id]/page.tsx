@@ -1,16 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { formatDate, isDateUpdateRequired, normalizeCaseStatus } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { CaseStatusBadge } from "@/components/StatusBadge";
 import AddUpdateForm from "@/app/(advocate)/advocate/cases/[id]/updates/AddUpdateForm";
 
 export default async function AssociateCaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: rawCase }, { data: updates }, { data: docs }] = await Promise.all([
-    supabase.from("cases")
-      .select("*")
+  const [{ data: c }, { data: updates }, { data: docs }] = await Promise.all([
+    supabase.from("case_with_alerts")
+      .select("*,needs_date_update")
       .eq("id", params.id).single(),
     supabase.from("case_updates")
       .select("*,profiles!case_updates_author_id_fkey(full_name,role)")
@@ -20,20 +21,16 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
       .eq("case_id", params.id).order("created_at", { ascending: false }),
   ]);
 
-  if (!rawCase) notFound();
+  if (!c) notFound();
 
-  const c = {
-    ...rawCase,
-    status: normalizeCaseStatus(rawCase.status),
-    needs_date_update: isDateUpdateRequired(rawCase.next_hearing_date),
-  };
-
+  // Fetch client profile separately to avoid FK-join failures in production
   const { data: clientProfile } = c.client_id
     ? await supabase.from("profiles").select("full_name,email,phone").eq("id", c.client_id).single()
     : { data: null };
 
   type AuthorRow = { full_name: string | null; role: string };
   const client = clientProfile as { full_name: string | null; email: string | null; phone: string | null } | null;
+  const needsUpdate = Boolean((c as { needs_date_update?: boolean }).needs_date_update);
 
   return (
     <div className="pg-wrap">
@@ -51,12 +48,13 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-6">
+          {/* Case info */}
           <div className="card">
             <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Details</h2></div>
             <div className="card-body grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Next Hearing</p>
-                <p className={c.needs_date_update ? "font-semibold text-red-600" : "font-semibold text-navy-700"}>
+                <p className={needsUpdate ? "font-semibold text-red-600" : "font-semibold text-navy-700"}>
                   {formatDate(c.next_hearing_date)}
                 </p>
               </div>
@@ -64,7 +62,7 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
                 <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Last Hearing</p>
                 <p className="text-gray-700">{formatDate(c.last_hearing_date)}</p>
               </div>
-              {c.needs_date_update && (
+              {needsUpdate && (
                 <div className="col-span-2">
                   <span className="inline-flex rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
                     Action Required — Date Not Updated
@@ -84,6 +82,7 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
             </div>
           </div>
 
+          {/* Add update */}
           <div className="card">
             <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Add Update</h2></div>
             <div className="card-body">
@@ -91,6 +90,7 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
             </div>
           </div>
 
+          {/* Updates history */}
           <div className="card">
             <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Update History</h2></div>
             {!updates?.length ? (
@@ -118,6 +118,7 @@ export default async function AssociateCaseDetailPage({ params }: { params: { id
           </div>
         </div>
 
+        {/* Right: client */}
         <div className="space-y-5">
           <div className="card">
             <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Client</h2></div>
