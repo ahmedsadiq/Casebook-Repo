@@ -16,7 +16,7 @@ export default function CaseForm({ mode, existingCase }: Props) {
 
   const [title, setTitle] = useState(existingCase?.title ?? "");
   const [description, setDescription] = useState(existingCase?.description ?? "");
-  const [status, setStatus] = useState<CaseStatus>(existingCase?.status ?? "Pending");
+  const [status, setStatus] = useState<CaseStatus>(existingCase?.status ?? "open");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,12 +87,9 @@ export default function CaseForm({ mode, existingCase }: Props) {
           value={status}
           onChange={(e) => setStatus(e.target.value as CaseStatus)}
         >
-          <option value="Pending">Pending</option>
-          <option value="Decided">Decided</option>
-          <option value="Disposed of">Disposed of</option>
-          <option value="Date in Office">Date in Office</option>
-          <option value="Rejected">Rejected</option>
-          <option value="Accepted">Accepted</option>
+          <option value="open">Open</option>
+          <option value="pending">Pending</option>
+          <option value="closed">Closed</option>
         </select>
       </div>
 

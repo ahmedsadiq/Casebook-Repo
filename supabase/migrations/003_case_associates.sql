@@ -20,7 +20,6 @@ create index if not exists case_associates_associate_id_idx on public.case_assoc
 alter table public.case_associates enable row level security;
 
 -- Advocate: full CRUD on case_associates for their own cases
-drop policy if exists "case_associates: advocate full access" on public.case_associates;
 create policy "case_associates: advocate full access"
   on public.case_associates for all
   using (
@@ -31,7 +30,6 @@ create policy "case_associates: advocate full access"
   );
 
 -- Associate: can see their own assignments
-drop policy if exists "case_associates: associate view own" on public.case_associates;
 create policy "case_associates: associate view own"
   on public.case_associates for select
   using (associate_id = auth.uid());

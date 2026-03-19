@@ -12,12 +12,12 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
   const { data: { user } } = await supabase.auth.getUser();
 
   let query = supabase
-    .from("case_with_alerts")
-    .select("id,title,status,case_number,court,last_hearing_date,next_hearing_date,created_at,client_id,needs_date_update")
+    .from("cases")
+    .select("id,title,status,case_number,court,next_hearing_date,created_at,client_id")
     .eq("advocate_id", user!.id)
     .order("created_at", { ascending: false });
 
-  const valid: CaseStatus[] = ["Pending", "Decided", "Disposed of", "Date in Office", "Rejected", "Accepted"];
+  const valid: CaseStatus[] = ["open", "pending", "closed"];
   if (searchParams.status && valid.includes(searchParams.status as CaseStatus))
     query = query.eq("status", searchParams.status);
   if (searchParams.q)
@@ -58,29 +58,20 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
           <table className="w-full">
             <thead>
               <tr className="thead">
-                <th>Case</th><th>Client</th><th>Status</th><th>Last Hearing</th><th>Next Hearing</th><th></th>
+                <th>Case</th><th>Client</th><th>Status</th><th>Next Hearing</th><th></th>
               </tr>
             </thead>
             <tbody>
               {cases.map(c => {
-                const needsUpdate = Boolean((c as { needs_date_update?: boolean }).needs_date_update);
                 return (
                   <tr key={c.id} className="trow">
                     <td className="tcell">
                       <Link href={`/advocate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
                       {c.case_number && <p className="text-xs text-gray-400 mt-0.5">#{c.case_number} {c.court ? `· ${c.court}` : ""}</p>}
-                      {needsUpdate && (
-                        <span className="inline-flex mt-1.5 rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
-                          Action Required — Date Not Updated
-                        </span>
-                      )}
                     </td>
                     <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? <span className="text-gray-300">—</span>) : <span className="text-gray-300">—</span>}</td>
                     <td className="tcell"><CaseStatusBadge status={c.status} /></td>
-                    <td className="tcell text-gray-500">{formatDate(c.last_hearing_date)}</td>
-                    <td className={`tcell ${needsUpdate ? "text-red-600 font-semibold" : "text-gray-500"}`}>
-                      {formatDate(c.next_hearing_date)}
-                    </td>
+                    <td className="tcell text-gray-500">{formatDate(c.next_hearing_date)}</td>
                     <td className="tcell text-right">
                       <Link href={`/advocate/cases/${c.id}/edit`} className="btn-secondary btn-sm">Edit</Link>
                     </td>

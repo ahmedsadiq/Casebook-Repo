@@ -17,86 +17,33 @@ export default function CaseForm({ mode, existingCase, clients }: Props) {
   const router = useRouter();
   const supabase = createClient();
 
-  const normalizeStatus = (value: string): CaseStatus | null => {
-    const v = value?.trim();
-    if (!v) return null;
-    if (v === "open" || v === "pending") return "Pending";
-    if (v === "closed") return "Disposed of";
-    if (v === "Pending" || v === "Decided" || v === "Disposed of" || v === "Date in Office" || v === "Rejected" || v === "Accepted") {
-      return v as CaseStatus;
-    }
-    return null;
-  };
-
-  const initialStatus = normalizeStatus((existingCase?.status ?? "Pending") as unknown as string) ?? "Pending";
-
   const [title,       setTitle]       = useState(existingCase?.title ?? "");
   const [description, setDesc]        = useState(existingCase?.description ?? "");
-  const [status,      setStatus]      = useState<CaseStatus>(initialStatus);
+  const [status,      setStatus]      = useState<CaseStatus>(existingCase?.status ?? "open");
   const [caseNo,      setCaseNo]      = useState(existingCase?.case_number ?? "");
   const [court,       setCourt]       = useState(existingCase?.court ?? "");
   const [hearing,     setHearing]     = useState(existingCase?.next_hearing_date?.split("T")[0] ?? "");
-  const lastHearing = existingCase?.last_hearing_date?.split("T")[0] ?? "";
-  const lastHearingDisplay = lastHearing || "Not available";
   const [clientId,    setClientId]    = useState(existingCase?.client_id ?? "");
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState<string | null>(null);
-
-  function getErrorMessage(err: unknown): string {
-    if (!err) return "Something went wrong.";
-    if (typeof err === "string") return err;
-    const e = err as { message?: string; details?: string; hint?: string; code?: string };
-    if (e.code === "AUTH") return "You must be signed in to save a case.";
-    if (e.code === "42501") return "You do not have permission to update this case.";
-    if (e.code === "42P17" || e.message?.toLowerCase().includes("infinite recursion")) {
-      return "Database policy recursion detected. Run the RLS fix migration (supabase/migrations/007_fix_rls_recursion.sql) and try again.";
-    }
-    if (e.code === "23514") return "Invalid status. Please choose a valid case status.";
-    if (e.code === "23502") return "Missing required fields. Please fill all required inputs.";
-    if (e.message?.includes("cases_status_check")) return "Invalid status. Please choose a valid case status.";
-    if (e.message?.toLowerCase().includes("jwt")) return "Your session expired. Please sign in again.";
-    if (e.message?.toLowerCase().includes("network")) return "Network error. Please try again.";
-    return e.details || e.message || "Something went wrong.";
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const normalizedStatus = normalizeStatus(status);
-      if (!normalizedStatus) {
-        setError(`Invalid status value: "${status}"`);
-        return;
-      }
-
-      const payload: {
-        title: string;
-        description: string | null;
-        status: CaseStatus;
-        case_number: string | null;
-        court: string | null;
-        next_hearing_date: string | null;
-        last_hearing_date?: string | null;
-        client_id: string | null;
-      } = {
-        title, description: description || null, status: normalizedStatus,
+      const payload = {
+        title, description: description || null, status,
         case_number: caseNo || null, court: court || null,
         next_hearing_date: hearing || null,
         client_id: clientId || null,
       };
-      if (mode === "edit" && existingCase) {
-        const previousNext = existingCase.next_hearing_date?.split("T")[0] ?? "";
-        if (hearing !== previousNext) payload.last_hearing_date = existingCase.next_hearing_date ?? null;
-      }
 
       if (mode === "create") {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw { code: "AUTH" };
         const { data, error } = await supabase.from("cases")
-          .insert({ ...payload, advocate_id: user!.id }).select("id").single();
+          .insert({ ...payload, advocate_id: user!.id }).select().single();
         if (error) throw error;
-        if (!data?.id) throw new Error("Case was created but could not be loaded. Please refresh and try again.");
         router.push(`/advocate/cases/${data.id}`);
       } else {
         const { error } = await supabase.from("cases")
@@ -106,7 +53,7 @@ export default function CaseForm({ mode, existingCase, clients }: Props) {
       }
       router.refresh();
     } catch (err: unknown) {
-      setError(getErrorMessage(err));
+      setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -130,12 +77,9 @@ export default function CaseForm({ mode, existingCase, clients }: Props) {
         <div>
           <label className="label">Status</label>
           <select className="input" value={status} onChange={e => setStatus(e.target.value as CaseStatus)}>
-            <option value="Pending">Pending</option>
-            <option value="Decided">Decided</option>
-            <option value="Disposed of">Disposed of</option>
-            <option value="Date in Office">Date in Office</option>
-            <option value="Rejected">Rejected</option>
-            <option value="Accepted">Accepted</option>
+            <option value="open">Open</option>
+            <option value="pending">Pending</option>
+            <option value="closed">Closed</option>
           </select>
         </div>
         <div>
@@ -147,10 +91,6 @@ export default function CaseForm({ mode, existingCase, clients }: Props) {
           <label className="label">Next hearing date</label>
           <input type="date" className="input" value={hearing}
             onChange={e => setHearing(e.target.value)} />
-        </div>
-        <div>
-          <label className="label">Last hearing date</label>
-          <input type="text" className="input bg-gray-50 text-gray-500" value={lastHearingDisplay} disabled readOnly />
         </div>
         <div className="col-span-2">
           <label className="label">Assign client</label>

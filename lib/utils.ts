@@ -5,15 +5,6 @@ export function formatDate(d: string | null | undefined): string {
   });
 }
 
-export function isDateUpdateRequired(nextHearingDate: string | null | undefined): boolean {
-  if (!nextHearingDate) return false;
-  const today = new Date();
-  const hearing = new Date(nextHearingDate);
-  today.setHours(0, 0, 0, 0);
-  hearing.setHours(0, 0, 0, 0);
-  return hearing < today;
-}
-
 export function formatCurrency(n: number): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency", currency: "INR", maximumFractionDigits: 0,

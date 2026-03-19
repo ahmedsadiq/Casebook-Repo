@@ -47,12 +47,9 @@ body {
 
   /* ── Badges ── */
   .badge          { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+  .badge-open     { @apply badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60; }
   .badge-pending  { @apply badge bg-amber-50 text-amber-700 ring-1 ring-amber-200/60; }
-  .badge-decided  { @apply badge bg-navy-50 text-navy-700 ring-1 ring-navy-200/60; }
-  .badge-disposed { @apply badge bg-gray-100 text-gray-500 ring-1 ring-gray-200; }
-  .badge-date-office { @apply badge bg-violet-50 text-violet-700 ring-1 ring-violet-200/60; }
-  .badge-rejected { @apply badge bg-red-50 text-red-600 ring-1 ring-red-200/60; }
-  .badge-accepted { @apply badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60; }
+  .badge-closed   { @apply badge bg-gray-100 text-gray-500 ring-1 ring-gray-200; }
   .badge-paid     { @apply badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60; }
   .badge-overdue  { @apply badge bg-red-50 text-red-600 ring-1 ring-red-200/60; }
   .badge-due      { @apply badge bg-amber-50 text-amber-700 ring-1 ring-amber-200/60; }

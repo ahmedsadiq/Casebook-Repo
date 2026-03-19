@@ -47,10 +47,6 @@ export default async function ClientCaseDetailPage({ params }: { params: { id: s
                 <p className="font-bold text-navy-700 text-base">{formatDate(c.next_hearing_date)}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Last Hearing</p>
-                <p className="text-gray-700">{formatDate(c.last_hearing_date)}</p>
-              </div>
-              <div>
                 <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Status</p>
                 <CaseStatusBadge status={c.status} />
               </div>

@@ -8,7 +8,7 @@ export default async function AssociateLayout({ children }: { children: React.Re
   if (!user) redirect("/auth");
 
   const { data: profile } = await supabase
-    .from("profiles").select("full_name, role").eq("id", user.id).maybeSingle();
+    .from("profiles").select("full_name, role").eq("id", user.id).single();
 
   if (profile?.role !== "associate") redirect("/auth");
 

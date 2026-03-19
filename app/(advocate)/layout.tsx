@@ -7,26 +7,11 @@ export default async function AdvocateLayout({ children }: { children: React.Rea
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) redirect("/auth");
 
-  let { data: profile, error: profileError } = await supabase
-    .from("profiles").select("full_name, role").eq("id", user.id).maybeSingle();
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles").select("full_name, role").eq("id", user.id).single();
 
   if (profileError) {
     throw new Error(`Failed to load profile: ${profileError.message}`);
-  }
-
-  if (!profile) {
-    const { error: insertError } = await supabase.from("profiles").insert({
-      id: user.id,
-      email: user.email ?? null,
-      full_name: typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : null,
-      role: "advocate",
-    });
-    if (insertError) throw new Error(`Failed to create profile: ${insertError.message}`);
-
-    const { data: createdProfile, error: createdProfileError } = await supabase
-      .from("profiles").select("full_name, role").eq("id", user.id).maybeSingle();
-    if (createdProfileError) throw new Error(`Failed to load profile: ${createdProfileError.message}`);
-    profile = createdProfile;
   }
 
   if (profile?.role !== "advocate") redirect("/auth");
