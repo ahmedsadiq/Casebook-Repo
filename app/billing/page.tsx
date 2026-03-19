@@ -2,7 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import BillingCheckoutButton from "@/components/BillingCheckoutButton";
 import { getAdvocatePlanPricing } from "@/lib/advocate-billing";
-import { formatSubscriptionStatus, isAdvocateSubscriptionActive } from "@/lib/advocate-subscription";
+import {
+  formatSubscriptionStatus,
+  isAdvocateSubscriptionActive,
+  shouldRequireAdvocateBilling,
+} from "@/lib/advocate-subscription";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Billing" };
@@ -23,18 +27,20 @@ export default async function BillingPage({
     supabase.from("profiles").select("role,full_name,email").eq("id", user.id).maybeSingle(),
     supabase
       .from("advocate_subscriptions")
-      .select("status,amount_pkr,current_period_end")
+      .select("status,amount_pkr,current_period_end,stripe_customer_id,stripe_subscription_id,stripe_checkout_session_id")
       .eq("advocate_id", user.id)
       .maybeSingle(),
   ]);
 
   if (profile?.role !== "advocate") redirect("/auth");
-  if (!subscription) redirect("/advocate/dashboard");
-  if (isAdvocateSubscriptionActive(subscription.status)) redirect("/advocate/dashboard");
+  if (!shouldRequireAdvocateBilling(subscription)) redirect("/advocate/dashboard");
+
+  const gatedSubscription = subscription!;
+  if (isAdvocateSubscriptionActive(gatedSubscription.status)) redirect("/advocate/dashboard");
 
   const pricing = getAdvocatePlanPricing();
-  const monthlyLabel = subscription.amount_pkr
-    ? `Rs ${new Intl.NumberFormat("en-PK").format(subscription.amount_pkr)}`
+  const monthlyLabel = gatedSubscription.amount_pkr
+    ? `Rs ${new Intl.NumberFormat("en-PK").format(gatedSubscription.amount_pkr)}`
     : pricing.monthlyPkrLabel;
 
   return (
@@ -65,7 +71,7 @@ export default async function BillingPage({
             <div className="rounded-2xl border border-gray-200 bg-white p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Status</p>
               <p className="mt-2 text-2xl font-semibold text-gray-900">
-                {formatSubscriptionStatus(subscription.status)}
+                {formatSubscriptionStatus(gatedSubscription.status)}
               </p>
               <p className="mt-2 text-sm text-gray-500">
                 Advocate: {profile?.full_name || user.email} ({profile?.email || user.email})

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { isAdvocateSubscriptionActive } from "@/lib/advocate-subscription";
+import { shouldRequireAdvocateBilling } from "@/lib/advocate-subscription";
 
 export default function AuthForm() {
   const router = useRouter();
@@ -57,12 +57,12 @@ export default function AuthForm() {
       } else {
         const { data: subscription, error: subscriptionError } = await supabase
           .from("advocate_subscriptions")
-          .select("status")
+          .select("status,stripe_customer_id,stripe_subscription_id,stripe_checkout_session_id")
           .eq("advocate_id", data.user.id)
           .maybeSingle();
         if (subscriptionError) throw subscriptionError;
 
-        if (subscription && !isAdvocateSubscriptionActive(subscription.status)) {
+        if (shouldRequireAdvocateBilling(subscription)) {
           router.push("/billing");
         } else {
           router.push("/advocate/dashboard");
