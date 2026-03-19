@@ -1,32 +1,38 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { formatDate } from "@/lib/utils";
+import { formatDate, isDateUpdateRequired, normalizeCaseStatus } from "@/lib/utils";
 import { CaseStatusBadge } from "@/components/StatusBadge";
 import CasesFilter from "./CasesFilter";
 import type { CaseStatus } from "@/lib/supabase/types";
 
 export const metadata = { title: "Cases" };
 
+const VALID_STATUSES: CaseStatus[] = ["Pending", "Decided", "Disposed of", "Date in Office", "Rejected", "Accepted"];
+
 export default async function CasesPage({ searchParams }: { searchParams: { q?: string; status?: string } }) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  let query = supabase
-    .from("case_with_alerts")
-    .select("id,title,status,case_number,court,last_hearing_date,next_hearing_date,created_at,client_id,needs_date_update")
+  const { data: rawCases } = await supabase
+    .from("cases")
+    .select("*")
     .eq("advocate_id", user!.id)
     .order("created_at", { ascending: false });
 
-  const valid: CaseStatus[] = ["Pending", "Decided", "Disposed of", "Date in Office", "Rejected", "Accepted"];
-  if (searchParams.status && valid.includes(searchParams.status as CaseStatus))
-    query = query.eq("status", searchParams.status);
-  if (searchParams.q)
-    query = query.ilike("title", `%${searchParams.q}%`);
+  const statusFilter = searchParams.status && VALID_STATUSES.includes(searchParams.status as CaseStatus)
+    ? searchParams.status as CaseStatus
+    : "";
+  const searchQuery = searchParams.q?.trim().toLowerCase() ?? "";
 
-  const { data: cases } = await query;
+  const cases = (rawCases ?? [])
+    .map(c => ({
+      ...c,
+      status: normalizeCaseStatus(c.status),
+      needs_date_update: isDateUpdateRequired(c.next_hearing_date),
+    }))
+    .filter(c => (!statusFilter || c.status === statusFilter) && (!searchQuery || c.title.toLowerCase().includes(searchQuery)));
 
-  // Fetch client names separately to avoid FK-join failures in production
-  const clientIds = [...new Set((cases ?? []).map(c => c.client_id).filter(Boolean) as string[])];
+  const clientIds = [...new Set(cases.map(c => c.client_id).filter(Boolean) as string[])];
   const { data: clientProfiles } = clientIds.length
     ? await supabase.from("profiles").select("id,full_name").in("id", clientIds)
     : { data: [] };
@@ -37,7 +43,7 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
       <div className="pg-head">
         <div>
           <h1 className="pg-title">Cases</h1>
-          <p className="pg-sub">{cases?.length ?? 0} case{cases?.length !== 1 ? "s" : ""}</p>
+          <p className="pg-sub">{cases.length} case{cases.length !== 1 ? "s" : ""}</p>
         </div>
         <Link href="/advocate/cases/new" className="btn-primary">+ New Case</Link>
       </div>
@@ -45,7 +51,7 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
       <CasesFilter initialQ={searchParams.q ?? ""} initialStatus={searchParams.status ?? ""} basePath="/advocate/cases" />
 
       <div className="card mt-4">
-        {!cases?.length ? (
+        {!cases.length ? (
           <div className="py-16 text-center">
             <p className="text-gray-400 text-sm mb-3">
               {searchParams.q || searchParams.status ? "No cases match your filters." : "No cases yet."}
@@ -63,7 +69,7 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
             </thead>
             <tbody>
               {cases.map(c => {
-                const needsUpdate = Boolean((c as { needs_date_update?: boolean }).needs_date_update);
+                const needsUpdate = Boolean(c.needs_date_update);
                 return (
                   <tr key={c.id} className="trow">
                     <td className="tcell">

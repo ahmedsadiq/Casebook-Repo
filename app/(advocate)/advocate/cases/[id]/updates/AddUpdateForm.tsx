@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseStatus } from "@/lib/supabase/types";
+import { normalizeCaseStatus } from "@/lib/utils";
 
 interface Props {
   caseId: string;
@@ -14,10 +15,11 @@ interface Props {
 export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: Props) {
   const router = useRouter();
   const supabase = createClient();
+  const normalizedCurrentStatus = normalizeCaseStatus(currentStatus);
 
   const [content,     setContent]     = useState("");
   const [hearingDate, setHearingDate] = useState("");
-  const [newStatus,   setNewStatus]   = useState<CaseStatus>(currentStatus);
+  const [newStatus,   setNewStatus]   = useState<CaseStatus>(normalizedCurrentStatus);
   const [file,        setFile]        = useState<File | null>(null);
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState<string | null>(null);
@@ -69,7 +71,7 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
       }
 
       const updatePayload: { status?: CaseStatus; next_hearing_date?: string | null; last_hearing_date?: string | null } = {};
-      if (newStatus !== currentStatus) updatePayload.status = newStatus;
+      if (newStatus !== normalizedCurrentStatus) updatePayload.status = newStatus;
       if (hearingDate) {
         updatePayload.next_hearing_date = hearingDate;
         if (previousNext !== hearingDate) updatePayload.last_hearing_date = previousNext;
@@ -131,8 +133,8 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
             <option value="Rejected">Rejected</option>
             <option value="Accepted">Accepted</option>
           </select>
-          {newStatus !== currentStatus && (
-            <p className="text-xs text-amber-600 mt-1">Status will change from <strong>{currentStatus}</strong> to <strong>{newStatus}</strong></p>
+          {newStatus !== normalizedCurrentStatus && (
+            <p className="text-xs text-amber-600 mt-1">Status will change from <strong>{normalizedCurrentStatus}</strong> to <strong>{newStatus}</strong></p>
           )}
         </div>
         <div>
