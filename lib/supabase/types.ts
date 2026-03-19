@@ -1,24 +1,12 @@
 export type UserRole    = "advocate" | "associate" | "client";
 export type CaseStatus  = "Pending" | "Decided" | "Disposed of" | "Date in Office" | "Rejected" | "Accepted";
 export type PaymentStatus = "pending" | "paid" | "overdue";
-export type AdvocateSubscriptionStatus =
-  | "pending"
-  | "incomplete"
-  | "incomplete_expired"
-  | "trialing"
-  | "active"
-  | "past_due"
-  | "canceled"
-  | "unpaid"
-  | "paused";
 
 export interface Profile {
   id: string;
   full_name: string | null;
   email: string | null;
   phone: string | null;
-  avatar_url: string | null;
-  office_address: string | null;
   role: UserRole;
   advocate_id: string | null;
   created_at: string;
@@ -81,20 +69,6 @@ export interface Task {
   updated_at: string;
 }
 
-export interface AdvocateSubscription {
-  advocate_id: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
-  stripe_checkout_session_id: string | null;
-  status: AdvocateSubscriptionStatus;
-  currency: string;
-  amount_pkr: number;
-  monthly_usd: number;
-  current_period_end: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 // Helper join types
 export interface CaseWithClient extends Case {
   client: Pick<Profile, "id" | "full_name" | "email" | "phone"> | null;
@@ -117,7 +91,6 @@ export type Database = {
       cases:            { Row: Case;          Insert: Omit<Case,"id"|"created_at"|"updated_at"> & { id?: string }; Update: Partial<Omit<Case,"id"|"advocate_id"|"created_at">> };
       case_updates:     { Row: CaseUpdate;    Insert: Omit<CaseUpdate,"id"|"created_at"> & { id?: string }; Update: Partial<Pick<CaseUpdate,"content"|"hearing_date">> };
       payments:         { Row: Payment;       Insert: Omit<Payment,"id"|"created_at"|"updated_at"> & { id?: string }; Update: Partial<Omit<Payment,"id"|"case_id"|"advocate_id"|"created_at">> };
-      advocate_subscriptions: { Row: AdvocateSubscription; Insert: Omit<AdvocateSubscription,"created_at"|"updated_at">; Update: Partial<Omit<AdvocateSubscription,"advocate_id"|"created_at">> };
       case_documents:   { Row: CaseDocument;  Insert: Omit<CaseDocument,"id"|"created_at"> & { id?: string }; Update: never };
       case_associates:  { Row: CaseAssociate; Insert: Omit<CaseAssociate,"added_at"> & { added_at?: string }; Update: never };
       tasks:            { Row: Task;          Insert: Omit<Task,"id"|"created_at"|"updated_at"> & { id?: string }; Update: Partial<Omit<Task,"id"|"user_id"|"created_at">> };

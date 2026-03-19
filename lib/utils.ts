@@ -47,12 +47,9 @@ export function isDateUpdateRequired(nextHearingDate: string | null | undefined)
 }
 
 export function formatCurrency(n: number): string {
-  const formattedNumber = new Intl.NumberFormat("en-PK", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency", currency: "INR", maximumFractionDigits: 0,
   }).format(n);
-
-  return `Rs ${formattedNumber}`;
 }
 
 export function formatFileSize(bytes: number | null): string {

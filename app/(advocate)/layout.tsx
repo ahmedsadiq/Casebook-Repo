@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Sidebar from "@/components/Sidebar";
-import { isAdvocateSubscriptionActive } from "@/lib/advocate-subscription";
 
 export default async function AdvocateLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
@@ -31,16 +30,6 @@ export default async function AdvocateLayout({ children }: { children: React.Rea
   }
 
   if (profile?.role !== "advocate") redirect("/auth");
-
-  const { data: subscription } = await supabase
-    .from("advocate_subscriptions")
-    .select("status")
-    .eq("advocate_id", user.id)
-    .maybeSingle();
-
-  if (subscription && !isAdvocateSubscriptionActive(subscription.status)) {
-    redirect("/billing");
-  }
 
   return (
     <div className="flex min-h-screen bg-[#f3f5f9]">

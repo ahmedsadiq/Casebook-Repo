@@ -1,96 +1,55 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getAdvocatePlanPricing } from "@/lib/advocate-billing";
 
 export default function LandingPage() {
-  const pricing = getAdvocatePlanPricing();
-
   return (
-    <main className="flex min-h-screen flex-col bg-white">
+    <main className="min-h-screen bg-white flex flex-col">
       <header className="border-b border-gray-100 px-8 py-4">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Image src="/app-icon.jpg" alt="Casebook" width={34} height={34} className="rounded-xl" />
-            <span className="text-lg font-semibold tracking-tight text-gray-900">Casebook</span>
+            <span className="text-lg font-semibold text-gray-900 tracking-tight">Casebook</span>
           </div>
-
-          <div className="flex items-center gap-3">
-            <Link href="/signup/advocate" className="btn-secondary">
-              Lawyer signup
-            </Link>
-            <Link href="/auth" className="btn-primary">
-              Sign in
-            </Link>
-          </div>
+          <Link href="/auth" className="btn-primary">Sign in →</Link>
         </div>
       </header>
 
-      <section className="flex flex-1 items-center justify-center px-6 py-28">
-        <div className="mx-auto max-w-2xl text-center">
-          <div className="mb-8 flex justify-center">
+      <section className="flex-1 flex items-center justify-center px-6 py-28">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="flex justify-center mb-8">
             <Image src="/app-icon.jpg" alt="Casebook" width={96} height={96} className="rounded-2xl shadow-card-md" />
           </div>
-          <h1 className="mb-5 text-5xl font-bold leading-tight tracking-tight text-gray-900">
-            Every case.
-            <br />
+          <h1 className="text-5xl font-bold text-gray-900 tracking-tight leading-tight mb-5">
+            Every case.<br />
             <span className="text-navy-700">Under control.</span>
           </h1>
-          <p className="mx-auto mb-10 max-w-xl text-xl leading-relaxed text-gray-500">
-            Casebook gives advocates, associates, and clients one platform to manage cases, track hearings, and
-            monitor payments seamlessly.
+          <p className="text-xl text-gray-500 leading-relaxed mb-10 max-w-xl mx-auto">
+            Casebook gives advocates, associates, and clients one platform to manage cases, track hearings, and monitor payments — seamlessly.
           </p>
-
-          <div className="flex flex-col items-center gap-3">
-            <Link href="/signup/advocate" className="btn-primary rounded-xl px-8 py-3 text-base shadow-card-md">
-              Start lawyer signup at {pricing.monthlyPkrLabel}/month
-            </Link>
-            <p className="text-sm text-gray-400">
-              Based on {pricing.monthlyUsdLabel} monthly pricing, displayed in PKR.
-            </p>
-          </div>
+          <Link href="/auth" className="btn-primary text-base px-8 py-3 rounded-xl shadow-card-md">
+            Get started free
+          </Link>
         </div>
       </section>
 
       <section className="border-t border-gray-100 bg-gray-50/60 px-6 py-16">
-        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            {
-              icon: "Adv",
-              role: "Advocate",
-              color: "text-navy-700",
-              bg: "bg-navy-50",
-              desc: "Full control to manage cases, clients, associates, payments, and every update.",
-            },
-            {
-              icon: "Asc",
-              role: "Associate",
-              color: "text-violet-700",
-              bg: "bg-violet-50",
-              desc: "View assigned cases, add progress notes, log hearings, upload documents, and update status.",
-            },
-            {
-              icon: "Cli",
-              role: "Client",
-              color: "text-teal-700",
-              bg: "bg-teal-50",
-              desc: "See case progress, upcoming hearing dates, pending dues, and your legal team contacts.",
-            },
-          ].map((feature) => (
-            <div key={feature.role} className="card p-6">
-              <div
-                className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl text-sm font-semibold ${feature.bg}`}
-              >
-                {feature.icon}
-              </div>
-              <p className={`mb-1.5 text-base font-semibold ${feature.color}`}>{feature.role}</p>
-              <p className="text-sm leading-relaxed text-gray-500">{feature.desc}</p>
+            { icon: "⚖️", role: "Advocate", color: "text-navy-700", bg: "bg-navy-50", desc: "Full control — manage cases, clients, associates, payments, and all case updates." },
+            { icon: "📋", role: "Associate", color: "text-violet-700", bg: "bg-violet-50", desc: "View assigned cases, add progress notes, log hearings, upload documents, update status." },
+            { icon: "👤", role: "Client",    color: "text-teal-700",   bg: "bg-teal-50",   desc: "See case progress, upcoming hearing dates, pending dues, and team contacts." },
+          ].map(f => (
+            <div key={f.role} className="card p-6">
+              <div className={`w-11 h-11 ${f.bg} rounded-xl flex items-center justify-center text-2xl mb-4`}>{f.icon}</div>
+              <p className={`font-semibold text-base ${f.color} mb-1.5`}>{f.role}</p>
+              <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       <footer className="border-t border-gray-100 px-8 py-5 text-center text-sm text-gray-400">
-        © {new Date().getFullYear()} Casebook. Built for legal professionals.
+        © {new Date().getFullYear()} Casebook — Built for legal professionals.
       </footer>
     </main>
   );

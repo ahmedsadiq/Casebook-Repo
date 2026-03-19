@@ -1,115 +1,123 @@
-# Casebook
+# Casebook — Multi-Role Legal Case Management
 
-Casebook is a multi-role legal case management app built with Next.js and Supabase.
+A production-ready Next.js app for advocates, associates, and clients to manage legal cases.
+
+---
 
 ## Roles
 
 | Role | Can Do |
-| --- | --- |
-| Advocate | Full CRUD on cases, clients, associates, payments. Creates associate and client accounts. |
-| Associate | View assigned cases, add updates, upload documents, update hearing dates and status. |
-| Client | Read-only portal for case progress, hearing dates, pending payments, and legal team contacts. |
+|---|---|
+| **Advocate** | Full CRUD on cases, clients, associates, payments. Creates associate + client accounts. |
+| **Associate** | View all cases, add progress notes, update hearing dates, upload documents, change case status. |
+| **Client** | Read-only portal: see case progress, updates, hearing dates, payment schedule, and legal team contacts. |
+
+---
 
 ## Setup
 
-### 1. Create a Supabase project
+### 1. Create Supabase Project
 
-1. Create a new Supabase project.
-2. Copy the project URL, anon key, and service role key.
+1. Go to [supabase.com](https://supabase.com) → New Project → name it **Casebook**
+2. Note your **Project URL** and **Anon Key** (Settings → API)
+3. Note your **Service Role Key** (Settings → API → service_role) — keep this secret
 
-### 2. Run the migrations
+### 2. Run the Migration
 
-Run the SQL files in `supabase/migrations` in order:
+1. Supabase Dashboard → **SQL Editor** → New Query
+2. Paste and run the full contents of `supabase/migrations/001_init.sql`
+3. This creates all tables, RLS policies, indexes, triggers, and the storage bucket
 
-1. `001_init.sql`
-2. Any later migration files in numeric order, including the profile and advocate subscription migrations
+### 3. Enable Email Auth
 
-### 3. Enable email auth
+1. Authentication → Providers → Email → **Enable** (on by default)
+2. Optional: Authentication → Settings → disable "Confirm email" for local testing
 
-Enable the Email provider in Supabase Authentication.
+### 4. Create Your Advocate Account
 
-### 4. Configure paid advocate signup
+Since advocates must sign up themselves (associates and clients are created by the advocate):
 
-Advocate signup now uses Stripe Checkout and bills monthly in PKR.
+1. Go to your deployed app or `http://localhost:3000/auth`
+2. You'll only see a sign-in form (accounts are created by advocates)
+3. Instead, go to: Supabase → Authentication → Users → **Add user** → create with email/password
+4. The trigger will auto-create the profile with role = 'advocate'
+5. Sign in with those credentials — you'll land on the advocate dashboard
 
-1. Set the Stripe environment variables shown below.
-2. Create a Stripe webhook endpoint for `/api/stripe/webhook`.
-3. Start advocate signup from `/signup/advocate`.
-4. Associates and clients are still created by the advocate after signup.
+> **Tip**: After first launch, you can make sign-up available for the initial advocate by temporarily adding a sign-up toggle to `/app/auth/AuthForm.tsx`.
 
-### 5. Local development
+### 5. Local Development
 
 ```bash
 cp .env.example .env.local
+# Fill in your values
 npm install
 npm run dev
 ```
 
 `.env.local` should contain:
-
-```env
+```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-STRIPE_SECRET_KEY=sk_test_your_secret_key
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
-ADVOCATE_MONTHLY_USD=5
-USD_TO_PKR_RATE=280
 ```
 
-### 6. Deploy
+### 6. Deploy to Vercel
 
-Set the same environment variables in your hosting platform.
+1. Push to GitHub
+2. Import repo at [vercel.com](https://vercel.com)
+3. Set environment variables:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+4. Deploy
+
+---
 
 ## Routes
 
-### Public
-
+### Advocate (`/advocate/*`)
 | Route | Description |
-| --- | --- |
-| `/` | Landing page |
-| `/auth` | Sign in |
-| `/signup/advocate` | Paid advocate signup |
-| `/billing` | Advocate billing gate for unpaid subscriptions |
-| `/billing/success` | Stripe return page after successful checkout |
-
-### Advocate
-
-| Route | Description |
-| --- | --- |
-| `/advocate/dashboard` | Stats and recent cases |
-| `/advocate/cases` | All cases with search and filter |
+|---|---|
+| `/advocate/dashboard` | Stats, recent cases |
+| `/advocate/cases` | All cases with search + filter |
 | `/advocate/cases/new` | Create case |
-| `/advocate/cases/[id]` | Case detail |
+| `/advocate/cases/[id]` | Case detail (updates, documents, payments) |
 | `/advocate/cases/[id]/edit` | Edit case |
-| `/advocate/cases/[id]/updates` | Add update and upload documents |
+| `/advocate/cases/[id]/updates` | Add update / upload doc |
 | `/advocate/cases/[id]/payments` | Manage payment schedule |
-| `/advocate/clients` | List, add, and remove clients |
-| `/advocate/associates` | List, add, and remove associates |
-| `/advocate/profile` | Update profile |
+| `/advocate/clients` | List + add + remove clients |
+| `/advocate/associates` | List + add + remove associates |
+| `/advocate/profile` | Update name, phone |
 
-### Associate
-
+### Associate (`/associate/*`)
 | Route | Description |
-| --- | --- |
+|---|---|
 | `/associate/dashboard` | Case overview |
-| `/associate/cases` | Cases for the advocate |
-| `/associate/cases/[id]` | Case detail |
+| `/associate/cases` | All cases for the advocate |
+| `/associate/cases/[id]` | Case detail + add updates/docs |
 
-### Client
-
+### Client (`/client/*`)
 | Route | Description |
-| --- | --- |
-| `/client/dashboard` | Cases, payments, and legal team info |
-| `/client/cases/[id]` | Case progress, updates, and payments |
+|---|---|
+| `/client/dashboard` | Cases, payments, legal team info |
+| `/client/cases/[id]` | Case progress, updates, payments |
+
+---
+
+## Tech Stack
+
+- **Next.js 14** App Router + TypeScript
+- **Supabase** Auth + Postgres + Storage + Row Level Security
+- **@supabase/ssr** — cookie-based session in App Router
+- **Tailwind CSS** — DM Sans font, navy palette
+- **Zod** — env validation only
 
 ## Scripts
 
 ```bash
-npm run dev
-npm run build
-npm run start
-npm run lint
-npm run typecheck
+npm run dev       # Dev server
+npm run build     # Production build
+npm run start     # Start production
+npm run lint      # ESLint
+npm run typecheck # TypeScript
 ```
