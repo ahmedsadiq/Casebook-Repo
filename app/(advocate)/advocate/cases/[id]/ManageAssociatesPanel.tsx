@@ -75,7 +75,7 @@ export default function ManageAssociatesPanel({ caseId, allAssociates, assigned 
         ) : (
           <ul className="space-y-2.5">
             {assignedList.map(a => (
-              <li key={a.id} className="flex items-center justify-between gap-2">
+              <li key={a.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="font-medium text-gray-800 truncate">{a.full_name ?? "—"}</p>
                   {a.email && <p className="text-xs text-gray-400 truncate">{a.email}</p>}
@@ -93,7 +93,7 @@ export default function ManageAssociatesPanel({ caseId, allAssociates, assigned 
         )}
 
         {unassigned.length > 0 && (
-          <div className="pt-3 border-t border-gray-100 flex gap-2">
+          <div className="flex flex-col gap-2 border-t border-gray-100 pt-3 sm:flex-row">
             <select
               className="input text-sm flex-1 min-w-0"
               value={selectedId}

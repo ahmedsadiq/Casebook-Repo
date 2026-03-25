@@ -31,7 +31,7 @@ export default async function PaymentsPage({ params }: { params: { id: string } 
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="card p-5">
           <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide">Collected</p>
           <p className="text-2xl font-bold text-emerald-600 mt-1">{formatCurrency(totalPaid)}</p>
@@ -46,25 +46,27 @@ export default async function PaymentsPage({ params }: { params: { id: string } 
       {!!payments?.length && (
         <div className="card mb-6">
           <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">All Payments</h2></div>
-          <table className="w-full">
-            <thead><tr className="thead"><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              {payments.map(p => (
-                <tr key={p.id} className="trow">
-                  <td className="tcell font-medium text-gray-800">{p.description}</td>
-                  <td className="tcell font-semibold text-gray-900">{formatCurrency(p.amount)}</td>
-                  <td className="tcell text-gray-500">{formatDate(p.due_date)}</td>
-                  <td className="tcell"><PaymentStatusBadge status={p.status} /></td>
-                  <td className="tcell">
-                    <div className="flex items-center gap-2 justify-end">
-                      {p.status !== "paid" && <MarkPaidButton paymentId={p.id} />}
-                      <DeletePaymentButton paymentId={p.id} desc={p.description} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead><tr className="thead"><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {payments.map(p => (
+                  <tr key={p.id} className="trow">
+                    <td className="tcell font-medium text-gray-800">{p.description}</td>
+                    <td className="tcell font-semibold text-gray-900">{formatCurrency(p.amount)}</td>
+                    <td className="tcell text-gray-500">{formatDate(p.due_date)}</td>
+                    <td className="tcell"><PaymentStatusBadge status={p.status} /></td>
+                    <td className="tcell">
+                      <div className="flex items-center justify-end gap-2">
+                        {p.status !== "paid" && <MarkPaidButton paymentId={p.id} />}
+                        <DeletePaymentButton paymentId={p.id} desc={p.description} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

@@ -53,7 +53,7 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
       <div className="card mt-4">
         {!cases.length ? (
           <div className="py-16 text-center">
-            <p className="text-gray-400 text-sm mb-3">
+            <p className="mb-3 text-sm text-gray-400">
               {searchParams.q || searchParams.status ? "No cases match your filters." : "No cases yet."}
             </p>
             {!searchParams.q && !searchParams.status && (
@@ -61,40 +61,42 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
             )}
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="thead">
-                <th>Case</th><th>Client</th><th>Status</th><th>Last Hearing</th><th>Next Hearing</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {cases.map(c => {
-                const needsUpdate = Boolean(c.needs_date_update);
-                return (
-                  <tr key={c.id} className="trow">
-                    <td className="tcell">
-                      <Link href={`/advocate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
-                      {c.case_number && <p className="text-xs text-gray-400 mt-0.5">#{c.case_number} {c.court ? `· ${c.court}` : ""}</p>}
-                      {needsUpdate && (
-                        <span className="inline-flex mt-1.5 rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
-                          Action Required — Date Not Updated
-                        </span>
-                      )}
-                    </td>
-                    <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? <span className="text-gray-300">—</span>) : <span className="text-gray-300">—</span>}</td>
-                    <td className="tcell"><CaseStatusBadge status={c.status} /></td>
-                    <td className="tcell text-gray-500">{formatDate(c.last_hearing_date)}</td>
-                    <td className={`tcell ${needsUpdate ? "text-red-600 font-semibold" : "text-gray-500"}`}>
-                      {formatDate(c.next_hearing_date)}
-                    </td>
-                    <td className="tcell text-right">
-                      <Link href={`/advocate/cases/${c.id}/edit`} className="btn-secondary btn-sm">Edit</Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table className="data-table-wide">
+              <thead>
+                <tr className="thead">
+                  <th>Case</th><th>Client</th><th>Status</th><th>Last Hearing</th><th>Next Hearing</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {cases.map(c => {
+                  const needsUpdate = Boolean(c.needs_date_update);
+                  return (
+                    <tr key={c.id} className="trow">
+                      <td className="tcell">
+                        <Link href={`/advocate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
+                        {c.case_number && <p className="mt-0.5 text-xs text-gray-400">#{c.case_number} {c.court ? `· ${c.court}` : ""}</p>}
+                        {needsUpdate && (
+                          <span className="mt-1.5 inline-flex rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+                            Action Required - Date Not Updated
+                          </span>
+                        )}
+                      </td>
+                      <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? <span className="text-gray-300">—</span>) : <span className="text-gray-300">—</span>}</td>
+                      <td className="tcell"><CaseStatusBadge status={c.status} /></td>
+                      <td className="tcell text-gray-500">{formatDate(c.last_hearing_date)}</td>
+                      <td className={`tcell ${needsUpdate ? "text-red-600 font-semibold" : "text-gray-500"}`}>
+                        {formatDate(c.next_hearing_date)}
+                      </td>
+                      <td className="tcell text-right">
+                        <Link href={`/advocate/cases/${c.id}/edit`} className="btn-secondary btn-sm">Edit</Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

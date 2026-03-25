@@ -158,7 +158,7 @@ export default function TasksWidget({ initialTasks }: Props) {
         ) : (
           <ul className="space-y-2.5">
             {visibleTasks.map(task => (
-              <li key={task.id} className="flex items-start justify-between gap-3">
+              <li key={task.id} className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-2.5">
                   <input type="checkbox" checked={task.completed} onChange={() => toggleComplete(task)} />
                   <div>
@@ -166,7 +166,7 @@ export default function TasksWidget({ initialTasks }: Props) {
                       <div className="space-y-2">
                         <input className="input" value={editTitle} onChange={e => setEditTitle(e.target.value)} />
                         <input type="date" className="input" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} />
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <button className="btn-primary btn-sm" type="button" onClick={() => saveEdit(task.id)}>Save</button>
                           <button className="btn-secondary btn-sm" type="button" onClick={() => setEditingId(null)}>Cancel</button>
                         </div>
@@ -182,7 +182,7 @@ export default function TasksWidget({ initialTasks }: Props) {
                   </div>
                 </div>
                 {editingId !== task.id && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 pl-7 sm:pl-0">
                     <button className="btn-ghost btn-sm" type="button" onClick={() => startEdit(task)}>Edit</button>
                     <button className="btn-ghost btn-sm text-red-600" type="button" onClick={() => deleteTask(task.id)}>Delete</button>
                   </div>

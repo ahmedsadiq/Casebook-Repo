@@ -21,16 +21,25 @@ export default function CasesFilter({
   }
 
   return (
-    <div className="flex flex-wrap gap-3">
-      <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-          <circle cx="11" cy="11" r="8"/><path strokeLinecap="round" d="m21 21-4.35-4.35"/>
+    <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="relative w-full sm:max-w-xs">
+        <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8" />
+          <path strokeLinecap="round" d="m21 21-4.35-4.35" />
         </svg>
-        <input type="search" className="input pl-9 w-64" placeholder="Search by title…"
-          value={q} onChange={e => { setQ(e.target.value); apply(e.target.value, status); }} />
+        <input
+          type="search"
+          className="input w-full pl-9"
+          placeholder="Search by title..."
+          value={q}
+          onChange={e => { setQ(e.target.value); apply(e.target.value, status); }}
+        />
       </div>
-      <select className="input w-44" value={status}
-        onChange={e => { setStatus(e.target.value); apply(q, e.target.value); }}>
+      <select
+        className="input w-full sm:w-44"
+        value={status}
+        onChange={e => { setStatus(e.target.value); apply(q, e.target.value); }}
+      >
         <option value="">All statuses</option>
         <option value="Pending">Pending</option>
         <option value="Decided">Decided</option>

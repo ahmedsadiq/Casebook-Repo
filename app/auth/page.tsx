@@ -10,7 +10,7 @@ export default function AuthPage() {
   const pricing = getAdvocatePlanPricing();
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10 sm:py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
@@ -20,7 +20,7 @@ export default function AuthPage() {
           <p className="mt-1 text-sm text-gray-500">Sign in to your Casebook account</p>
         </div>
 
-        <div className="card p-8">
+        <div className="card p-5 sm:p-8">
           <AuthForm />
         </div>
 

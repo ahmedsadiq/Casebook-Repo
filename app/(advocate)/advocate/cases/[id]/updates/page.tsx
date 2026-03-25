@@ -21,7 +21,7 @@ export default async function AddUpdatePage({ params }: { params: { id: string }
         <h1 className="pg-title">Add Case Update</h1>
         <p className="pg-sub">Log progress, update the hearing date, or upload a document</p>
       </div>
-      <div className="card p-7">
+      <div className="card p-5 sm:p-7">
         <AddUpdateForm caseId={c.id} currentStatus={c.status} redirectPath={`/advocate/cases/${c.id}`} />
       </div>
     </div>

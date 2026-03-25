@@ -116,8 +116,8 @@ export default function CaseForm({ mode, existingCase, clients }: Props) {
     <form onSubmit={handleSubmit} className="space-y-5">
       {error && <div className="alert-error">{error}</div>}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
           <label className="label">Case title <span className="text-red-400">*</span></label>
           <input className="input" placeholder="e.g. Smith v. Jones" value={title}
             onChange={e => setTitle(e.target.value)} required />
@@ -152,7 +152,7 @@ export default function CaseForm({ mode, existingCase, clients }: Props) {
           <label className="label">Last hearing date</label>
           <input type="text" className="input bg-gray-50 text-gray-500" value={lastHearingDisplay} disabled readOnly />
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <label className="label">Assign client</label>
           <select className="input" value={clientId} onChange={e => setClientId(e.target.value)}>
             <option value="">— No client assigned —</option>
@@ -161,14 +161,14 @@ export default function CaseForm({ mode, existingCase, clients }: Props) {
             ))}
           </select>
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <label className="label">Description / Notes</label>
           <textarea className="input resize-none" rows={4} placeholder="Case background, key facts…"
             value={description} onChange={e => setDesc(e.target.value)} />
         </div>
       </div>
 
-      <div className="flex items-center gap-3 pt-1">
+      <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center">
         <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? "Saving…" : mode === "create" ? "Create Case" : "Save Changes"}
         </button>

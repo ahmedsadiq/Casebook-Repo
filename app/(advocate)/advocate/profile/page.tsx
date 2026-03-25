@@ -27,7 +27,7 @@ export default async function AdvocateProfilePage() {
         avatarUrl={profile?.avatar_url ?? ""}
         officeAddress={profile?.office_address ?? ""}
       />
-      <div className="card p-7">
+      <div className="card p-5 sm:p-7">
         <div className="mb-5 pb-5 border-b border-gray-100">
           <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-0.5">Email</p>
           <p className="text-sm text-gray-900">{user!.email}</p>

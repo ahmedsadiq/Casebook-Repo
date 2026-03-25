@@ -46,64 +46,68 @@ export default async function ClientDashboard() {
         <div><h1 className="pg-title">My Cases</h1><p className="pg-sub">Progress and updates</p></div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="card p-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Active Cases</p>
-          <p className="text-3xl font-bold text-navy-700 mt-1.5">{cases.filter(c => c.status !== "Disposed of").length}</p>
+          <p className="mt-1.5 text-3xl font-bold text-navy-700">{cases.filter(c => c.status !== "Disposed of").length}</p>
         </div>
         <div className="card p-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Hearings</p>
-          <p className="text-sm font-semibold text-gray-900 mt-1.5">Last: {formatDate(lastCase?.last_hearing_date)}</p>
-          <p className="text-sm font-semibold text-gray-900 mt-1">Next: {formatDate(nextCase?.next_hearing_date)}</p>
+          <p className="mt-1.5 text-sm font-semibold text-gray-900">Last: {formatDate(lastCase?.last_hearing_date)}</p>
+          <p className="mt-1 text-sm font-semibold text-gray-900">Next: {formatDate(nextCase?.next_hearing_date)}</p>
         </div>
         <div className="card p-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Pending Dues</p>
-          <p className="text-2xl font-bold text-amber-600 mt-1.5">{formatCurrency(pendingTotal)}</p>
+          <p className="mt-1.5 text-2xl font-bold text-amber-600">{formatCurrency(pendingTotal)}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div className="space-y-6 xl:col-span-2">
           <div className="card">
             <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Your Cases</h2></div>
             {!cases.length ? (
               <div className="py-14 text-center text-sm text-gray-400">No cases assigned to you yet.</div>
             ) : (
-              <table className="w-full">
-                <thead><tr className="thead"><th>Case</th><th>Status</th><th>Last Hearing</th><th>Next Hearing</th></tr></thead>
-                <tbody>
-                  {cases.map(c => (
-                    <tr key={c.id} className="trow">
-                      <td className="tcell">
-                        <Link href={`/client/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
-                        {c.case_number && <p className="text-xs text-gray-400 mt-0.5">#{c.case_number} {c.court ? `· ${c.court}` : ""}</p>}
-                      </td>
-                      <td className="tcell"><CaseStatusBadge status={c.status} /></td>
-                      <td className="tcell text-gray-500">{formatDate(c.last_hearing_date)}</td>
-                      <td className="tcell text-gray-500">{formatDate(c.next_hearing_date)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead><tr className="thead"><th>Case</th><th>Status</th><th>Last Hearing</th><th>Next Hearing</th></tr></thead>
+                  <tbody>
+                    {cases.map(c => (
+                      <tr key={c.id} className="trow">
+                        <td className="tcell">
+                          <Link href={`/client/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
+                          {c.case_number && <p className="mt-0.5 text-xs text-gray-400">#{c.case_number} {c.court ? `· ${c.court}` : ""}</p>}
+                        </td>
+                        <td className="tcell"><CaseStatusBadge status={c.status} /></td>
+                        <td className="tcell text-gray-500">{formatDate(c.last_hearing_date)}</td>
+                        <td className="tcell text-gray-500">{formatDate(c.next_hearing_date)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
           {payments && payments.length > 0 && (
             <div className="card">
               <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Payment Schedule</h2></div>
-              <table className="w-full">
-                <thead><tr className="thead"><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th></tr></thead>
-                <tbody>
-                  {payments.map(p => (
-                    <tr key={p.id} className="trow">
-                      <td className="tcell font-medium text-gray-800">{p.description}</td>
-                      <td className="tcell font-semibold text-gray-900">{formatCurrency(p.amount)}</td>
-                      <td className="tcell text-gray-500">{formatDate(p.due_date)}</td>
-                      <td className="tcell"><PaymentStatusBadge status={p.status} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead><tr className="thead"><th>Description</th><th>Amount</th><th>Due Date</th><th>Status</th></tr></thead>
+                  <tbody>
+                    {payments.map(p => (
+                      <tr key={p.id} className="trow">
+                        <td className="tcell font-medium text-gray-800">{p.description}</td>
+                        <td className="tcell font-semibold text-gray-900">{formatCurrency(p.amount)}</td>
+                        <td className="tcell text-gray-500">{formatDate(p.due_date)}</td>
+                        <td className="tcell"><PaymentStatusBadge status={p.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -114,10 +118,10 @@ export default async function ClientDashboard() {
           {advocate && (
             <div className="card">
               <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Your Advocate</h2></div>
-              <div className="card-body text-sm space-y-1">
+              <div className="card-body space-y-1 text-sm">
                 <p className="font-semibold text-gray-900">{advocate.full_name ?? "—"}</p>
                 <span className="role-advocate inline-flex">advocate</span>
-                {advocate.email && <p className="text-gray-500 mt-1">{advocate.email}</p>}
+                {advocate.email && <p className="mt-1 text-gray-500">{advocate.email}</p>}
                 {advocate.phone && <p className="text-gray-500">{advocate.phone}</p>}
               </div>
             </div>
@@ -129,8 +133,8 @@ export default async function ClientDashboard() {
                 {associates.map((a, i) => (
                   <div key={i} className="px-5 py-3.5 text-sm">
                     <p className="font-medium text-gray-800">{a.full_name ?? "—"}</p>
-                    {a.email && <p className="text-gray-500 text-xs mt-0.5">{a.email}</p>}
-                    {a.phone && <p className="text-gray-400 text-xs">{a.phone}</p>}
+                    {a.email && <p className="mt-0.5 text-xs text-gray-500">{a.email}</p>}
+                    {a.phone && <p className="text-xs text-gray-400">{a.phone}</p>}
                   </div>
                 ))}
               </div>

@@ -56,7 +56,10 @@ export default async function AssociateDashboard() {
   return (
     <div className="pg-wrap">
       <div className="pg-head">
-        <div><h1 className="pg-title">Dashboard</h1><p className="pg-sub">Cases you are working on</p></div>
+        <div>
+          <h1 className="pg-title">Dashboard</h1>
+          <p className="pg-sub">Cases you are working on</p>
+        </div>
         <Link href="/associate/calendar" className="btn-secondary">Calendar</Link>
       </div>
 
@@ -68,22 +71,24 @@ export default async function AssociateDashboard() {
         {!todayCases.length ? (
           <div className="card-body text-sm text-gray-400">No hearings scheduled for today.</div>
         ) : (
-          <table className="w-full">
-            <thead><tr className="thead"><th>Case</th><th>Client</th><th>Court</th><th>Case #</th><th>Status</th></tr></thead>
-            <tbody>
-              {todayCases.map(c => (
-                <tr key={c.id} className="trow">
-                  <td className="tcell">
-                    <Link href={`/associate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
-                  </td>
-                  <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? "—") : "—"}</td>
-                  <td className="tcell text-gray-600">{c.court ?? "—"}</td>
-                  <td className="tcell text-gray-600">{c.case_number ?? "—"}</td>
-                  <td className="tcell"><CaseStatusBadge status={c.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table className="data-table-wide">
+              <thead><tr className="thead"><th>Case</th><th>Client</th><th>Court</th><th>Case #</th><th>Status</th></tr></thead>
+              <tbody>
+                {todayCases.map(c => (
+                  <tr key={c.id} className="trow">
+                    <td className="tcell">
+                      <Link href={`/associate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
+                    </td>
+                    <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? "—") : "—"}</td>
+                    <td className="tcell text-gray-600">{c.court ?? "—"}</td>
+                    <td className="tcell text-gray-600">{c.case_number ?? "—"}</td>
+                    <td className="tcell"><CaseStatusBadge status={c.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -95,29 +100,31 @@ export default async function AssociateDashboard() {
         {!pendingCases.length ? (
           <div className="card-body text-sm text-gray-400">No pending cases.</div>
         ) : (
-          <table className="w-full">
-            <thead><tr className="thead"><th>Case</th><th>Client</th><th>Court</th><th>Case #</th><th>Status</th><th>Next Hearing</th></tr></thead>
-            <tbody>
-              {pendingCases.map(c => (
-                <tr key={c.id} className="trow">
-                  <td className="tcell">
-                    <Link href={`/associate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
-                  </td>
-                  <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? "—") : "—"}</td>
-                  <td className="tcell text-gray-600">{c.court ?? "—"}</td>
-                  <td className="tcell text-gray-600">{c.case_number ?? "—"}</td>
-                  <td className="tcell"><CaseStatusBadge status={c.status} /></td>
-                  <td className={`tcell ${c.needs_date_update ? "text-red-600 font-semibold" : "text-gray-500"}`}>
-                    {formatDate(c.next_hearing_date)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table className="data-table-wide">
+              <thead><tr className="thead"><th>Case</th><th>Client</th><th>Court</th><th>Case #</th><th>Status</th><th>Next Hearing</th></tr></thead>
+              <tbody>
+                {pendingCases.map(c => (
+                  <tr key={c.id} className="trow">
+                    <td className="tcell">
+                      <Link href={`/associate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
+                    </td>
+                    <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? "—") : "—"}</td>
+                    <td className="tcell text-gray-600">{c.court ?? "—"}</td>
+                    <td className="tcell text-gray-600">{c.case_number ?? "—"}</td>
+                    <td className="tcell"><CaseStatusBadge status={c.status} /></td>
+                    <td className={`tcell ${c.needs_date_update ? "text-red-600 font-semibold" : "text-gray-500"}`}>
+                      {formatDate(c.next_hearing_date)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           { label: "Total Cases", value: counts.total, color: "text-gray-900" },
           { label: "Pending", value: counts.pending, color: "text-amber-600" },
@@ -125,7 +132,7 @@ export default async function AssociateDashboard() {
         ].map(({ label, value, color }) => (
           <div key={label} className="card p-5">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
-            <p className={`text-3xl font-bold mt-1.5 ${color}`}>{value}</p>
+            <p className={`mt-1.5 text-3xl font-bold ${color}`}>{value}</p>
           </div>
         ))}
       </div>
@@ -138,25 +145,27 @@ export default async function AssociateDashboard() {
         {!recentCases.length ? (
           <div className="py-14 text-center text-sm text-gray-400">
             <p>No cases assigned to you yet.</p>
-            <p className="text-xs mt-1">Your advocate will assign you to cases from the case detail page.</p>
+            <p className="mt-1 text-xs">Your advocate will assign you to cases from the case detail page.</p>
           </div>
         ) : (
-          <table className="w-full">
-            <thead><tr className="thead"><th>Title</th><th>Status</th><th>Last Hearing</th><th>Next Hearing</th></tr></thead>
-            <tbody>
-              {recentCases.map(c => (
-                <tr key={c.id} className="trow">
-                  <td className="tcell">
-                    <Link href={`/associate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
-                    {c.case_number && <p className="text-xs text-gray-400 mt-0.5">#{c.case_number}</p>}
-                  </td>
-                  <td className="tcell"><CaseStatusBadge status={c.status} /></td>
-                  <td className="tcell text-gray-500">{formatDate(c.last_hearing_date)}</td>
-                  <td className="tcell text-gray-500">{formatDate(c.next_hearing_date)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead><tr className="thead"><th>Title</th><th>Status</th><th>Last Hearing</th><th>Next Hearing</th></tr></thead>
+              <tbody>
+                {recentCases.map(c => (
+                  <tr key={c.id} className="trow">
+                    <td className="tcell">
+                      <Link href={`/associate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
+                      {c.case_number && <p className="mt-0.5 text-xs text-gray-400">#{c.case_number}</p>}
+                    </td>
+                    <td className="tcell"><CaseStatusBadge status={c.status} /></td>
+                    <td className="tcell text-gray-500">{formatDate(c.last_hearing_date)}</td>
+                    <td className="tcell text-gray-500">{formatDate(c.next_hearing_date)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

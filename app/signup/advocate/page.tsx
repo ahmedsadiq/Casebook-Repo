@@ -9,9 +9,9 @@ export default function AdvocateSignupPage() {
   const pricing = getAdvocatePlanPricing();
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-12">
+    <main className="min-h-screen bg-gray-50 px-4 py-8 sm:py-12">
       <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="rounded-[28px] bg-gradient-to-br from-navy-900 via-navy-800 to-slate-900 p-8 text-white shadow-card md:p-10">
+        <section className="rounded-[28px] bg-gradient-to-br from-navy-900 via-navy-800 to-slate-900 p-6 text-white shadow-card sm:p-8 md:p-10">
           <div className="flex items-center gap-3">
             <Image src="/app-icon.jpg" alt="Casebook" width={40} height={40} className="rounded-xl" />
             <span className="text-lg font-semibold tracking-tight">Casebook</span>
@@ -21,7 +21,7 @@ export default function AdvocateSignupPage() {
             <p className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-navy-100">
               Paid Lawyer Signup
             </p>
-            <h1 className="mt-5 text-4xl font-bold leading-tight md:text-5xl">
+            <h1 className="mt-5 text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
               Launch your advocate workspace for {pricing.monthlyPkrLabel}/month
             </h1>
             <p className="mt-5 text-base leading-7 text-navy-100">
@@ -52,7 +52,7 @@ export default function AdvocateSignupPage() {
           </div>
         </section>
 
-        <section className="card p-8">
+        <section className="card p-5 sm:p-8">
           <div className="mb-6">
             <h2 className="text-2xl font-semibold text-gray-900">Create advocate account</h2>
             <p className="mt-1 text-sm text-gray-500">

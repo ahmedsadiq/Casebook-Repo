@@ -44,12 +44,12 @@ export default async function BillingPage({
     : pricing.monthlyPkrLabel;
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-12">
+    <main className="min-h-screen bg-gray-50 px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-2xl">
-        <div className="card p-8">
+        <div className="card p-5 sm:p-8">
           <div className="mb-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Advocate Billing</p>
-            <h1 className="mt-2 text-3xl font-semibold text-gray-900">Complete your monthly lawyer plan</h1>
+            <h1 className="mt-2 text-2xl font-semibold text-gray-900 sm:text-3xl">Complete your monthly lawyer plan</h1>
             <p className="mt-2 text-sm text-gray-500">
               Your account exists, but advocate access stays locked until Stripe confirms the subscription.
             </p>
@@ -73,7 +73,7 @@ export default async function BillingPage({
               <p className="mt-2 text-2xl font-semibold text-gray-900">
                 {formatSubscriptionStatus(gatedSubscription.status)}
               </p>
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 break-words text-sm text-gray-500">
                 Advocate: {profile?.full_name || user.email} ({profile?.email || user.email})
               </p>
             </div>

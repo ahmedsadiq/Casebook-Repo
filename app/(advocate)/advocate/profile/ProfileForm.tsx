@@ -181,7 +181,7 @@ export default function ProfileForm({
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
           Profile Picture Preview
         </p>
-        <div className="mt-4 flex items-center gap-4">
+        <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-white bg-navy-100 text-xl font-semibold text-navy-700 shadow-sm">
             {trimmedAvatar && !avatarLoadFailed ? (
               <img
@@ -233,7 +233,7 @@ export default function ProfileForm({
           className="input file:mr-3 file:rounded-lg file:border-0 file:bg-navy-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-navy-700 hover:file:bg-navy-100"
           onChange={handleAvatarSelect}
         />
-        <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
+        <div className="mt-2 flex flex-col gap-2 text-xs text-gray-500 sm:flex-row sm:items-center">
           <span>JPG, PNG, WEBP, GIF up to 5MB</span>
           {(avatarPreview || avatarFile) && (
             <button
@@ -257,7 +257,7 @@ export default function ProfileForm({
         />
       </div>
 
-      <button type="submit" className="btn-primary" disabled={loading}>
+      <button type="submit" className="btn-primary w-full sm:w-auto" disabled={loading}>
         {loading ? "Saving..." : "Save Changes"}
       </button>
     </form>

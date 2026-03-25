@@ -43,8 +43,8 @@ export default function PaymentForm({ caseId }: { caseId: string }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && <div className="alert-error">{error}</div>}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
           <label className="label">Description <span className="text-red-400">*</span></label>
           <input className="input" placeholder="e.g. Retainer fee, Court filing fee" value={desc}
             onChange={e => setDesc(e.target.value)} required />
@@ -67,7 +67,7 @@ export default function PaymentForm({ caseId }: { caseId: string }) {
           </select>
         </div>
       </div>
-      <button type="submit" className="btn-primary" disabled={loading}>
+      <button type="submit" className="btn-primary w-full sm:w-auto" disabled={loading}>
         {loading ? "Adding…" : "Add Payment"}
       </button>
     </form>

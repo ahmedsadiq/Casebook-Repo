@@ -122,7 +122,7 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
           value={content} onChange={e => setContent(e.target.value)} required />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className="label">Update case status</label>
           <select className="input" value={newStatus} onChange={e => setNewStatus(e.target.value as CaseStatus)}>
@@ -150,7 +150,7 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
           onChange={e => setFile(e.target.files?.[0] ?? null)} />
       </div>
 
-      <div className="flex items-center gap-3 pt-1">
+      <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center">
         <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? "Saving…" : "Save Update"}
         </button>

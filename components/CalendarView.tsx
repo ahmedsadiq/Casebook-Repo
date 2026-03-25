@@ -79,7 +79,7 @@ export default function CalendarView({ events, basePath, title = "Calendar" }: P
   }, [view, cursor]);
 
   const monthLabel = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const weekLabel = `${startOfWeek(cursor).toLocaleDateString("en-US", { month: "short", day: "numeric" })} — ${endOfWeek(cursor).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+  const weekLabel = `${startOfWeek(cursor).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${endOfWeek(cursor).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 
   const selectedEvents = eventsByDate[selectedDate] ?? [];
 
@@ -94,16 +94,18 @@ export default function CalendarView({ events, basePath, title = "Calendar" }: P
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
           <p className="text-sm text-gray-500">{view === "week" ? `Week of ${weekLabel}` : monthLabel}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="btn-secondary btn-sm" onClick={() => shift(-1)}>Prev</button>
-          <button className="btn-secondary btn-sm" onClick={() => setCursor(new Date())}>Today</button>
-          <button className="btn-secondary btn-sm" onClick={() => shift(1)}>Next</button>
-          <div className="ml-2 flex items-center rounded-lg border border-gray-200 bg-white">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex flex-wrap items-center gap-2">
+            <button className="btn-secondary btn-sm" onClick={() => shift(-1)}>Prev</button>
+            <button className="btn-secondary btn-sm" onClick={() => setCursor(new Date())}>Today</button>
+            <button className="btn-secondary btn-sm" onClick={() => shift(1)}>Next</button>
+          </div>
+          <div className="flex w-fit items-center rounded-lg border border-gray-200 bg-white">
             <button
               className={`px-3 py-1.5 text-xs ${view === "month" ? "bg-navy-50 text-navy-700 font-semibold" : "text-gray-500"}`}
               onClick={() => setView("month")}
@@ -121,47 +123,51 @@ export default function CalendarView({ events, basePath, title = "Calendar" }: P
       </div>
 
       <div className="card overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/70 text-xs font-semibold text-gray-400 uppercase">
-          {WEEKDAYS.map(d => (
-            <div key={d} className="px-3 py-2">{d}</div>
-          ))}
-        </div>
-        <div className={`grid grid-cols-7 ${view === "week" ? "" : "auto-rows-[110px]"}`}>
-          {days.map(d => {
-            const key = toDateKey(d);
-            const isToday = key === todayKey;
-            const inMonth = d.getMonth() === cursor.getMonth();
-            const dayEvents = eventsByDate[key] ?? [];
-            const hasOverdue = dayEvents.some(e => e.overdue);
-            return (
-              <button
-                key={key}
-                onClick={() => setSelectedDate(key)}
-                className={`text-left border-b border-r border-gray-100 p-2.5 transition-colors ${
-                  selectedDate === key ? "bg-navy-50/60" : "bg-white"
-                } ${!inMonth && view === "month" ? "text-gray-300" : "text-gray-700"} ${
-                  isToday ? "ring-2 ring-navy-200" : hasOverdue ? "ring-2 ring-red-200" : ""
-                }`}
-              >
-                <div className={`text-xs font-semibold ${isToday ? "text-navy-700" : ""}`}>{d.getDate()}</div>
-                <div className="mt-1.5 space-y-1">
-                  {dayEvents.slice(0, 2).map(ev => (
-                    <div
-                      key={`${ev.caseId}-${ev.title}`}
-                      className={`truncate rounded px-1.5 py-0.5 text-xs ${
-                        ev.overdue ? "bg-red-100 text-red-700" : isToday ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {ev.title}
+        <div className="overflow-x-auto">
+          <div className="min-w-[700px]">
+            <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/70 text-xs font-semibold uppercase text-gray-400">
+              {WEEKDAYS.map(d => (
+                <div key={d} className="px-3 py-2">{d}</div>
+              ))}
+            </div>
+            <div className={`grid grid-cols-7 ${view === "week" ? "" : "auto-rows-[110px]"}`}>
+              {days.map(d => {
+                const key = toDateKey(d);
+                const isToday = key === todayKey;
+                const inMonth = d.getMonth() === cursor.getMonth();
+                const dayEvents = eventsByDate[key] ?? [];
+                const hasOverdue = dayEvents.some(e => e.overdue);
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedDate(key)}
+                    className={`border-b border-r border-gray-100 p-2.5 text-left transition-colors ${
+                      selectedDate === key ? "bg-navy-50/60" : "bg-white"
+                    } ${!inMonth && view === "month" ? "text-gray-300" : "text-gray-700"} ${
+                      isToday ? "ring-2 ring-navy-200" : hasOverdue ? "ring-2 ring-red-200" : ""
+                    }`}
+                  >
+                    <div className={`text-xs font-semibold ${isToday ? "text-navy-700" : ""}`}>{d.getDate()}</div>
+                    <div className="mt-1.5 space-y-1">
+                      {dayEvents.slice(0, 2).map(ev => (
+                        <div
+                          key={`${ev.caseId}-${ev.title}`}
+                          className={`truncate rounded px-1.5 py-0.5 text-xs ${
+                            ev.overdue ? "bg-red-100 text-red-700" : isToday ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {ev.title}
+                        </div>
+                      ))}
+                      {dayEvents.length > 2 && (
+                        <div className="text-[11px] text-gray-400">+{dayEvents.length - 2} more</div>
+                      )}
                     </div>
-                  ))}
-                  {dayEvents.length > 2 && (
-                    <div className="text-[11px] text-gray-400">+{dayEvents.length - 2} more</div>
-                  )}
-                </div>
-              </button>
-            );
-          })}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -175,12 +181,12 @@ export default function CalendarView({ events, basePath, title = "Calendar" }: P
           ) : (
             <ul className="space-y-2">
               {selectedEvents.map(ev => (
-                <li key={`${ev.caseId}-${ev.title}`} className="flex items-center justify-between">
+                <li key={`${ev.caseId}-${ev.title}`} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <Link className="font-medium text-navy-700 hover:underline" href={`${basePath}/${ev.caseId}`}>
                       {ev.title}
                     </Link>
-                    {ev.overdue && <span className="ml-2 text-xs text-red-600 font-semibold">Overdue</span>}
+                    {ev.overdue && <span className="ml-2 text-xs font-semibold text-red-600">Overdue</span>}
                   </div>
                   <span className="text-xs text-gray-400">{ev.date.slice(0, 10)}</span>
                 </li>

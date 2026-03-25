@@ -63,7 +63,7 @@ export default async function AdvocateDashboard() {
           <h1 className="pg-title">Dashboard</h1>
           <p className="pg-sub">Your practice at a glance</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <Link href="/advocate/calendar" className="btn-secondary">Calendar</Link>
           <Link href="/advocate/cases/new" className="btn-primary">+ New Case</Link>
         </div>
@@ -77,22 +77,24 @@ export default async function AdvocateDashboard() {
         {!todayCases.length ? (
           <div className="card-body text-sm text-gray-400">No hearings scheduled for today.</div>
         ) : (
-          <table className="w-full">
-            <thead><tr className="thead"><th>Case</th><th>Client</th><th>Court</th><th>Case #</th><th>Status</th></tr></thead>
-            <tbody>
-              {todayCases.map(c => (
-                <tr key={c.id} className="trow">
-                  <td className="tcell">
-                    <Link href={`/advocate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
-                  </td>
-                  <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? "—") : "—"}</td>
-                  <td className="tcell text-gray-600">{c.court ?? "—"}</td>
-                  <td className="tcell text-gray-600">{c.case_number ?? "—"}</td>
-                  <td className="tcell"><CaseStatusBadge status={c.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table className="data-table-wide">
+              <thead><tr className="thead"><th>Case</th><th>Client</th><th>Court</th><th>Case #</th><th>Status</th></tr></thead>
+              <tbody>
+                {todayCases.map(c => (
+                  <tr key={c.id} className="trow">
+                    <td className="tcell">
+                      <Link href={`/advocate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
+                    </td>
+                    <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? "—") : "—"}</td>
+                    <td className="tcell text-gray-600">{c.court ?? "—"}</td>
+                    <td className="tcell text-gray-600">{c.case_number ?? "—"}</td>
+                    <td className="tcell"><CaseStatusBadge status={c.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -104,29 +106,31 @@ export default async function AdvocateDashboard() {
         {!pendingCases.length ? (
           <div className="card-body text-sm text-gray-400">No pending cases.</div>
         ) : (
-          <table className="w-full">
-            <thead><tr className="thead"><th>Case</th><th>Client</th><th>Court</th><th>Case #</th><th>Status</th><th>Next Hearing</th></tr></thead>
-            <tbody>
-              {pendingCases.map(c => (
-                <tr key={c.id} className="trow">
-                  <td className="tcell">
-                    <Link href={`/advocate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
-                  </td>
-                  <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? "—") : "—"}</td>
-                  <td className="tcell text-gray-600">{c.court ?? "—"}</td>
-                  <td className="tcell text-gray-600">{c.case_number ?? "—"}</td>
-                  <td className="tcell"><CaseStatusBadge status={c.status} /></td>
-                  <td className={`tcell ${c.needs_date_update ? "text-red-600 font-semibold" : "text-gray-500"}`}>
-                    {formatDate(c.next_hearing_date)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table className="data-table-wide">
+              <thead><tr className="thead"><th>Case</th><th>Client</th><th>Court</th><th>Case #</th><th>Status</th><th>Next Hearing</th></tr></thead>
+              <tbody>
+                {pendingCases.map(c => (
+                  <tr key={c.id} className="trow">
+                    <td className="tcell">
+                      <Link href={`/advocate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
+                    </td>
+                    <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? "—") : "—"}</td>
+                    <td className="tcell text-gray-600">{c.court ?? "—"}</td>
+                    <td className="tcell text-gray-600">{c.case_number ?? "—"}</td>
+                    <td className="tcell"><CaseStatusBadge status={c.status} /></td>
+                    <td className={`tcell ${c.needs_date_update ? "text-red-600 font-semibold" : "text-gray-500"}`}>
+                      {formatDate(c.next_hearing_date)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: "Total Cases", value: counts.total, color: "text-gray-900" },
           { label: "Pending", value: counts.pending, color: "text-amber-600" },
@@ -135,29 +139,29 @@ export default async function AdvocateDashboard() {
         ].map(({ label, value, color }) => (
           <div key={label} className="card p-5">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
-            <p className={`text-3xl font-bold mt-1.5 ${color}`}>{value}</p>
+            <p className={`mt-1.5 text-3xl font-bold ${color}`}>{value}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="card p-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Clients</p>
-          <p className="text-3xl font-bold mt-1.5 text-navy-700">{clients?.length ?? 0}</p>
-          <Link href="/advocate/clients" className="text-xs text-navy-600 hover:underline mt-1.5 block">Manage →</Link>
+          <p className="mt-1.5 text-3xl font-bold text-navy-700">{clients?.length ?? 0}</p>
+          <Link href="/advocate/clients" className="mt-1.5 block text-xs text-navy-600 hover:underline">Manage →</Link>
         </div>
         <div className="card p-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Associates</p>
-          <p className="text-3xl font-bold mt-1.5 text-violet-600">{associates?.length ?? 0}</p>
-          <Link href="/advocate/associates" className="text-xs text-violet-600 hover:underline mt-1.5 block">Manage →</Link>
+          <p className="mt-1.5 text-3xl font-bold text-violet-600">{associates?.length ?? 0}</p>
+          <Link href="/advocate/associates" className="mt-1.5 block text-xs text-violet-600 hover:underline">Manage →</Link>
         </div>
         <div className="card p-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Pending Fees</p>
-          <p className="text-2xl font-bold mt-1.5 text-amber-600">{formatCurrency(pending)}</p>
+          <p className="mt-1.5 text-2xl font-bold text-amber-600">{formatCurrency(pending)}</p>
         </div>
         <div className="card p-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Overdue</p>
-          <p className="text-2xl font-bold mt-1.5 text-red-600">{overdue > 0 ? formatCurrency(overdue) : "—"}</p>
+          <p className="mt-1.5 text-2xl font-bold text-red-600">{overdue > 0 ? formatCurrency(overdue) : "—"}</p>
         </div>
       </div>
 
@@ -168,34 +172,36 @@ export default async function AdvocateDashboard() {
         </div>
         {!recentCases.length ? (
           <div className="py-14 text-center">
-            <p className="text-gray-400 text-sm mb-3">No cases yet.</p>
+            <p className="mb-3 text-sm text-gray-400">No cases yet.</p>
             <Link href="/advocate/cases/new" className="btn-primary btn-sm inline-flex">Create your first case</Link>
           </div>
         ) : (
-          <table className="w-full">
-            <thead><tr className="thead"><th>Title</th><th>Status</th><th>Last Hearing</th><th>Next Hearing</th><th>Created</th></tr></thead>
-            <tbody>
-              {recentCases.map(c => (
-                <tr key={c.id} className="trow">
-                  <td className="tcell">
-                    <Link href={`/advocate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
-                    {c.case_number && <p className="text-xs text-gray-400 mt-0.5">#{c.case_number}</p>}
-                    {c.needs_date_update && (
-                      <span className="inline-flex mt-1.5 rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
-                        Action Required
-                      </span>
-                    )}
-                  </td>
-                  <td className="tcell"><CaseStatusBadge status={c.status} /></td>
-                  <td className="tcell text-gray-500">{formatDate(c.last_hearing_date)}</td>
-                  <td className={`tcell ${c.needs_date_update ? "text-red-600 font-semibold" : "text-gray-500"}`}>
-                    {formatDate(c.next_hearing_date)}
-                  </td>
-                  <td className="tcell text-gray-400">{formatDate(c.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead><tr className="thead"><th>Title</th><th>Status</th><th>Last Hearing</th><th>Next Hearing</th><th>Created</th></tr></thead>
+              <tbody>
+                {recentCases.map(c => (
+                  <tr key={c.id} className="trow">
+                    <td className="tcell">
+                      <Link href={`/advocate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
+                      {c.case_number && <p className="mt-0.5 text-xs text-gray-400">#{c.case_number}</p>}
+                      {c.needs_date_update && (
+                        <span className="mt-1.5 inline-flex rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+                          Action Required
+                        </span>
+                      )}
+                    </td>
+                    <td className="tcell"><CaseStatusBadge status={c.status} /></td>
+                    <td className="tcell text-gray-500">{formatDate(c.last_hearing_date)}</td>
+                    <td className={`tcell ${c.needs_date_update ? "text-red-600 font-semibold" : "text-gray-500"}`}>
+                      {formatDate(c.next_hearing_date)}
+                    </td>
+                    <td className="tcell text-gray-400">{formatDate(c.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

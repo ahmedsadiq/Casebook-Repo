@@ -22,7 +22,7 @@ export default function ProfileSummaryCard({
   const initials = getInitials(fullName);
 
   return (
-    <div className="mb-6 rounded-2xl border border-gray-200 bg-gradient-to-br from-white via-slate-50 to-navy-50/40 p-6">
+    <div className="mb-6 rounded-2xl border border-gray-200 bg-gradient-to-br from-white via-slate-50 to-navy-50/40 p-4 sm:p-6">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
         <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-white bg-navy-100 text-xl font-semibold text-navy-700 shadow-sm">
           {avatarUrl ? (

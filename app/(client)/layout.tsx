@@ -13,9 +13,9 @@ export default async function ClientLayout({ children }: { children: React.React
   if (profile?.role !== "client") redirect("/auth");
 
   return (
-    <div className="flex min-h-screen bg-[#f3f5f9]">
+    <div className="flex min-h-screen flex-col bg-[#f3f5f9] lg:h-screen lg:overflow-hidden lg:flex-row">
       <Sidebar fullName={profile.full_name} role="client" />
-      <main className="flex-1 overflow-auto">{children}</main>
+      <main className="min-w-0 flex-1 overflow-auto lg:h-screen lg:overflow-y-auto">{children}</main>
     </div>
   );
 }

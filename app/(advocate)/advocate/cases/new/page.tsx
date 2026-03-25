@@ -22,7 +22,7 @@ export default async function NewCasePage() {
         <h1 className="pg-title">New Case</h1>
         <p className="pg-sub">Create a new case file</p>
       </div>
-      <div className="card p-7">
+      <div className="card p-5 sm:p-7">
         <CaseForm mode="create" clients={clients ?? []} />
       </div>
     </div>
