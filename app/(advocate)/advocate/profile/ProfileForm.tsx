@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -37,6 +37,12 @@ type ProfileFormProps = {
   phone: string;
   avatarUrl: string;
   officeAddress: string;
+  onDraftChange?: (draft: {
+    fullName: string;
+    phone: string;
+    avatarUrl: string;
+    officeAddress: string;
+  }) => void;
 };
 
 export default function ProfileForm({
@@ -44,8 +50,10 @@ export default function ProfileForm({
   phone,
   avatarUrl,
   officeAddress,
+  onDraftChange,
 }: ProfileFormProps) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const supabase = createClient();
   const [name, setName] = useState(fullName);
   const [ph, setPh] = useState(phone);
@@ -62,17 +70,32 @@ export default function ProfileForm({
   const trimmedAvatar = avatarPreview.trim();
   const initials = getInitials(name);
 
+  useEffect(() => {
+    onDraftChange?.({
+      fullName: name,
+      phone: ph,
+      avatarUrl: avatarPreview,
+      officeAddress: address,
+    });
+  }, [address, avatarPreview, name, onDraftChange, ph]);
+
+  function openFilePicker() {
+    fileInputRef.current?.click();
+  }
+
   function handleAvatarSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
       setError("Please choose an image file.");
+      e.target.value = "";
       return;
     }
 
     if (file.size > MAX_AVATAR_SIZE) {
       setError("Profile picture must be 5MB or smaller.");
+      e.target.value = "";
       return;
     }
 
@@ -89,6 +112,8 @@ export default function ProfileForm({
       }
     };
     reader.readAsDataURL(file);
+
+    e.target.value = "";
   }
 
   function handleRemoveAvatar() {
@@ -176,29 +201,62 @@ export default function ProfileForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="rounded-2xl border border-gray-200 bg-gray-50/80 p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
-          Profile Picture Preview
-        </p>
-        <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-white bg-navy-100 text-xl font-semibold text-navy-700 shadow-sm">
-            {trimmedAvatar && !avatarLoadFailed ? (
-              <img
-                src={trimmedAvatar}
-                alt={name || "Profile picture"}
-                className="h-full w-full object-cover"
-                onError={() => setAvatarLoadFailed(true)}
-              />
-            ) : (
-              <span>{initials}</span>
-            )}
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="rounded-3xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 sm:p-6">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={openFilePicker}
+              className="group relative h-24 w-24 overflow-hidden rounded-3xl border border-white bg-navy-100 shadow-[0_18px_45px_rgba(15,23,42,0.12)] transition-transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-navy-200 focus:ring-offset-2"
+              aria-label={trimmedAvatar ? "Change profile picture" : "Upload profile picture"}
+            >
+              {trimmedAvatar && !avatarLoadFailed ? (
+                <img
+                  src={trimmedAvatar}
+                  alt={name || "Profile picture"}
+                  className="h-full w-full object-cover"
+                  onError={() => setAvatarLoadFailed(true)}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-navy-700">
+                  {initials}
+                </div>
+              )}
+              <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/65 via-black/10 to-transparent p-3 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                <span className="text-xs font-medium text-white">
+                  {trimmedAvatar ? "Change photo" : "Add photo"}
+                </span>
+              </div>
+            </button>
+
+            <div className="space-y-1.5">
+              <p className="text-sm font-semibold text-gray-900">Profile photo</p>
+              <p className="max-w-sm text-sm leading-relaxed text-gray-500">
+                Click the photo to upload a new image. Click it again anytime to change it.
+              </p>
+              <p className="text-xs text-gray-400">JPG, PNG, WEBP, GIF up to 5MB</p>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">
-            <p>Upload a profile picture from your device.</p>
-            <p className="mt-1">If no image is set, your initials appear instead.</p>
-          </div>
+
+          {(avatarPreview || avatarFile) && (
+            <button
+              type="button"
+              onClick={handleRemoveAvatar}
+              className="inline-flex w-fit items-center rounded-full border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+            >
+              Remove photo
+            </button>
+          )}
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleAvatarSelect}
+        />
       </div>
 
       {error && <div className="alert-error">{error}</div>}
@@ -223,28 +281,6 @@ export default function ProfileForm({
           value={ph}
           onChange={(e) => setPh(e.target.value)}
         />
-      </div>
-
-      <div>
-        <label className="label">Profile picture</label>
-        <input
-          type="file"
-          accept="image/*"
-          className="input file:mr-3 file:rounded-lg file:border-0 file:bg-navy-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-navy-700 hover:file:bg-navy-100"
-          onChange={handleAvatarSelect}
-        />
-        <div className="mt-2 flex flex-col gap-2 text-xs text-gray-500 sm:flex-row sm:items-center">
-          <span>JPG, PNG, WEBP, GIF up to 5MB</span>
-          {(avatarPreview || avatarFile) && (
-            <button
-              type="button"
-              className="font-medium text-red-600 hover:underline"
-              onClick={handleRemoveAvatar}
-            >
-              Remove picture
-            </button>
-          )}
-        </div>
       </div>
 
       <div>

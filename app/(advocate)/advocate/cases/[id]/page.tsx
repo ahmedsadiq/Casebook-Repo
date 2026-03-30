@@ -5,6 +5,8 @@ import { formatDate, formatCurrency, formatFileSize, isDateUpdateRequired, norma
 import { CaseStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import DeleteCaseButton from "./DeleteCaseButton";
 import ManageAssociatesPanel from "./ManageAssociatesPanel";
+import DocumentUploadButton from "./DocumentUploadButton";
+import AssignClientControl from "../AssignClientControl";
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
@@ -15,21 +17,40 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
     { data: updates },
     { data: payments },
     { data: docs },
+    { data: linkedTasks },
+    { data: allClients },
     { data: allAssociates },
     { data: assignedRows },
   ] = await Promise.all([
     supabase.from("cases").select("*").eq("id", params.id).eq("advocate_id", user!.id).single(),
     supabase.from("case_updates")
       .select("*,profiles!case_updates_author_id_fkey(full_name,role)")
-      .eq("case_id", params.id).order("created_at", { ascending: false }),
+      .eq("case_id", params.id)
+      .order("created_at", { ascending: false }),
     supabase.from("payments")
-      .select("*").eq("case_id", params.id).order("due_date", { ascending: true }),
+      .select("*")
+      .eq("case_id", params.id)
+      .order("due_date", { ascending: true }),
     supabase.from("case_documents")
       .select("*,profiles!case_documents_uploader_id_fkey(full_name)")
-      .eq("case_id", params.id).order("created_at", { ascending: false }),
+      .eq("case_id", params.id)
+      .order("created_at", { ascending: false }),
+    supabase.from("tasks")
+      .select("id,title,due_date,completed,created_at")
+      .eq("user_id", user!.id)
+      .eq("case_id", params.id)
+      .order("completed", { ascending: true })
+      .order("due_date", { ascending: true, nullsFirst: false }),
     supabase.from("profiles")
       .select("id,full_name,email")
-      .eq("advocate_id", user!.id).eq("role", "associate").order("full_name"),
+      .eq("advocate_id", user!.id)
+      .eq("role", "client")
+      .order("full_name"),
+    supabase.from("profiles")
+      .select("id,full_name,email")
+      .eq("advocate_id", user!.id)
+      .eq("role", "associate")
+      .order("full_name"),
     supabase.from("case_associates")
       .select("associate_id, profiles!case_associates_associate_id_fkey(id,full_name,email)")
       .eq("case_id", params.id),
@@ -53,12 +74,18 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
   type AssociateRow = { id: string; full_name: string | null; email: string | null };
 
   const client = clientProfile as ClientRow | null;
-  const totalDue = payments?.filter(p => p.status !== "paid").reduce((s, p) => s + p.amount, 0) ?? 0;
+  const totalDue = payments?.filter((payment) => payment.status !== "paid").reduce((sum, payment) => sum + payment.amount, 0) ?? 0;
 
-  const assigned: AssociateRow[] = (assignedRows ?? []).map(row => {
-    const p = row.profiles as unknown as AssociateRow | null;
-    return p ?? { id: row.associate_id, full_name: null, email: null };
+  const assigned: AssociateRow[] = (assignedRows ?? []).map((row) => {
+    const profile = row.profiles as unknown as AssociateRow | null;
+    return profile ?? { id: row.associate_id, full_name: null, email: null };
   });
+  const associateActivity = (updates ?? [])
+    .filter((update) => {
+      const author = update.profiles as unknown as AuthorRow | null;
+      return author?.role === "associate";
+    })
+    .slice(0, 4);
 
   return (
     <div className="pg-wrap">
@@ -75,6 +102,22 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link href={`/advocate/cases/${c.id}/edit`} className="btn-secondary btn-sm">Edit</Link>
           <Link href={`/advocate/cases/${c.id}/updates`} className="btn-primary btn-sm">+ Update</Link>
+          <Link href={{ pathname: "/advocate/dashboard", query: { taskCaseId: c.id } }} className="btn-secondary btn-sm">Add task</Link>
+          <Link
+            href={{
+              pathname: "/advocate/ask-expert",
+              query: {
+                caseId: c.id,
+                title: c.title,
+                status: c.status,
+                court: c.court ?? "",
+                nextHearingDate: c.next_hearing_date ?? "",
+              },
+            }}
+            className="btn-secondary btn-sm"
+          >
+            Ask about this case
+          </Link>
           <DeleteCaseButton caseId={c.id} caseTitle={c.title} />
         </div>
       </div>
@@ -127,21 +170,21 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
               <div className="py-10 text-center text-sm text-gray-400">No updates yet.</div>
             ) : (
               <div className="divide-y divide-gray-100">
-                {updates.map(u => {
-                  const author = u.profiles as unknown as AuthorRow | null;
+                {updates.map((update) => {
+                  const author = update.profiles as unknown as AuthorRow | null;
                   return (
-                    <div key={u.id} className="px-4 py-4 sm:px-6">
+                    <div key={update.id} className="px-4 py-4 sm:px-6">
                       <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-medium text-gray-800">{author?.full_name ?? "Unknown"}</span>
                           <span className={author?.role === "advocate" ? "role-advocate" : "role-associate"}>{author?.role}</span>
                         </div>
-                        <span className="text-xs text-gray-400 sm:ml-auto">{formatDate(u.created_at)}</span>
+                        <span className="text-xs text-gray-400 sm:ml-auto">{formatDate(update.created_at)}</span>
                       </div>
-                      <p className="text-sm leading-relaxed text-gray-700">{u.content}</p>
-                      {u.hearing_date && (
+                      <p className="text-sm leading-relaxed text-gray-700">{update.content}</p>
+                      {update.hearing_date && (
                         <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-navy-600">
-                          <span>Next hearing:</span> {formatDate(u.hearing_date)}
+                          <span>Next hearing:</span> {formatDate(update.hearing_date)}
                         </p>
                       )}
                     </div>
@@ -154,28 +197,58 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
           <div className="card">
             <div className="card-header">
               <h2 className="text-sm font-semibold text-gray-700">Documents</h2>
-              <Link href={`/advocate/cases/${c.id}/updates`} className="btn-secondary btn-sm">+ Upload</Link>
+              <DocumentUploadButton caseId={c.id} />
             </div>
             {!docs?.length ? (
               <div className="py-10 text-center text-sm text-gray-400">No documents uploaded.</div>
             ) : (
               <div className="divide-y divide-gray-100">
-                {docs.map(d => {
-                  const uploader = d.profiles as unknown as UploaderRow | null;
+                {docs.map((doc) => {
+                  const uploader = doc.profiles as unknown as UploaderRow | null;
                   return (
-                    <div key={d.id} className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div key={doc.id} className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                       <div className="flex min-w-0 items-center gap-3">
-                        <span className="text-xl">📄</span>
+                        <span className="text-xl">File</span>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-gray-800">{d.name}</p>
+                          <p className="truncate text-sm font-medium text-gray-800">{doc.name}</p>
                           <p className="text-xs text-gray-400">
-                            {uploader?.full_name} · {formatDate(d.created_at)} {d.size_bytes ? `· ${formatFileSize(d.size_bytes)}` : ""}
+                            {uploader?.full_name} · {formatDate(doc.created_at)} {doc.size_bytes ? `· ${formatFileSize(doc.size_bytes)}` : ""}
                           </p>
                         </div>
                       </div>
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-sm font-semibold text-gray-700">Linked Tasks</h2>
+              <Link href={{ pathname: "/advocate/dashboard", query: { taskCaseId: c.id } }} className="btn-secondary btn-sm">
+                Manage tasks
+              </Link>
+            </div>
+            {!linkedTasks?.length ? (
+              <div className="py-10 text-center text-sm text-gray-400">No tasks linked to this case yet.</div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {linkedTasks.map((task) => (
+                  <div key={task.id} className="flex flex-col gap-2 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div>
+                      <p className={`text-sm font-medium ${task.completed ? "text-gray-400 line-through" : "text-gray-800"}`}>{task.title}</p>
+                      <p className="text-xs text-gray-400">
+                        {task.due_date ? `Due ${formatDate(task.due_date)}` : "No due date"}
+                      </p>
+                    </div>
+                    <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      task.completed ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                    }`}>
+                      {task.completed ? "Completed" : "Open"}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -186,12 +259,24 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             <div className="card-header"><h2 className="text-sm font-semibold text-gray-700">Client</h2></div>
             <div className="card-body text-sm">
               {!client ? (
-                <p className="text-gray-400">No client assigned.</p>
+                <div className="space-y-3">
+                  <p className="text-gray-400">No client assigned yet. Link a client here so this case is easier to track.</p>
+                  <AssignClientControl
+                    caseId={c.id}
+                    currentClientId={c.client_id}
+                    clients={allClients ?? []}
+                  />
+                </div>
               ) : (
                 <div className="space-y-2">
-                  <p className="font-semibold text-gray-900">{client.full_name ?? "—"}</p>
+                  <p className="font-semibold text-gray-900">{client.full_name ?? "-"}</p>
                   {client.email && <p className="break-words text-gray-500">{client.email}</p>}
                   {client.phone && <p className="text-gray-500">{client.phone}</p>}
+                  <AssignClientControl
+                    caseId={c.id}
+                    currentClientId={c.client_id}
+                    clients={allClients ?? []}
+                  />
                   <Link href="/advocate/clients" className="mt-2 block text-xs text-navy-600 hover:underline">View all clients →</Link>
                 </div>
               )}
@@ -206,6 +291,33 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
 
           <div className="card">
             <div className="card-header">
+              <h2 className="text-sm font-semibold text-gray-700">Recent Associate Activity</h2>
+              <span className="text-xs text-gray-400">{associateActivity.length} update{associateActivity.length !== 1 ? "s" : ""}</span>
+            </div>
+            {!associateActivity.length ? (
+              <div className="card-body text-sm text-gray-400">No associate updates on this case yet.</div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {associateActivity.map((update) => {
+                  const author = update.profiles as unknown as AuthorRow | null;
+                  const preview = update.content.length > 120 ? `${update.content.slice(0, 120)}...` : update.content;
+
+                  return (
+                    <div key={update.id} className="px-4 py-3.5">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm font-medium text-gray-900">{author?.full_name ?? "Associate"}</p>
+                        <span className="text-xs text-gray-400">{formatDate(update.created_at)}</span>
+                      </div>
+                      <p className="mt-1 text-sm leading-6 text-gray-600">{preview}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="card">
+            <div className="card-header">
               <h2 className="text-sm font-semibold text-gray-700">Payments</h2>
               <Link href={`/advocate/cases/${c.id}/payments`} className="btn-secondary btn-sm">Manage</Link>
             </div>
@@ -213,15 +325,15 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
               <div className="card-body text-sm text-gray-400">No payment records.</div>
             ) : (
               <div className="divide-y divide-gray-100">
-                {payments.map(p => (
-                  <div key={p.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                {payments.map((payment) => (
+                  <div key={payment.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-800">{p.description}</p>
-                      <p className="text-xs text-gray-400">Due: {formatDate(p.due_date)}</p>
+                      <p className="text-sm font-medium text-gray-800">{payment.description}</p>
+                      <p className="text-xs text-gray-400">Due: {formatDate(payment.due_date)}</p>
                     </div>
                     <div className="text-left sm:text-right">
-                      <p className="text-sm font-semibold text-gray-900">{formatCurrency(p.amount)}</p>
-                      <PaymentStatusBadge status={p.status} />
+                      <p className="text-sm font-semibold text-gray-900">{formatCurrency(payment.amount)}</p>
+                      <PaymentStatusBadge status={payment.status} />
                     </div>
                   </div>
                 ))}

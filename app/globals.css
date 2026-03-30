@@ -47,7 +47,7 @@ body {
   .card-body    { @apply p-4 sm:p-6; }
 
   /* ── Badges ── */
-  .badge          { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+  .badge          { @apply inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-center text-xs font-semibold leading-tight whitespace-normal; }
   .badge-pending  { @apply badge bg-amber-50 text-amber-700 ring-1 ring-amber-200/60; }
   .badge-decided  { @apply badge bg-navy-50 text-navy-700 ring-1 ring-navy-200/60; }
   .badge-disposed { @apply badge bg-gray-100 text-gray-500 ring-1 ring-gray-200; }

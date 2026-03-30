@@ -2,17 +2,22 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { formatDate } from "@/lib/utils";
 
-type CalendarEvent = {
+export type CalendarEvent = {
+  id: string;
   date: string;
   title: string;
-  caseId: string;
+  kind?: "hearing" | "task";
+  href?: string;
+  actionLabel?: string;
   overdue?: boolean;
+  completed?: boolean;
 };
 
 interface Props {
   events: CalendarEvent[];
-  basePath: string;
+  basePath?: string;
   title?: string;
 }
 
@@ -51,19 +56,46 @@ function endOfMonth(d: Date) {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0);
 }
 
+function compareEvents(a: CalendarEvent, b: CalendarEvent) {
+  if ((a.overdue ?? false) !== (b.overdue ?? false)) return a.overdue ? -1 : 1;
+  if ((a.completed ?? false) !== (b.completed ?? false)) return a.completed ? 1 : -1;
+  if ((a.kind ?? "hearing") !== (b.kind ?? "hearing")) return a.kind === "task" ? -1 : 1;
+  return a.title.localeCompare(b.title);
+}
+
+function getEventBadgeClass(event: CalendarEvent, isToday: boolean) {
+  if (event.kind === "task") {
+    if (event.completed) return "bg-emerald-100 text-emerald-700";
+    if (event.overdue) return "bg-red-100 text-red-700";
+    return "bg-amber-100 text-amber-800";
+  }
+
+  return event.overdue
+    ? "bg-red-100 text-red-700"
+    : isToday
+      ? "bg-emerald-50 text-emerald-700"
+      : "bg-gray-100 text-gray-700";
+}
+
 export default function CalendarView({ events, basePath, title = "Calendar" }: Props) {
   const [view, setView] = useState<"month" | "week">("month");
   const [cursor, setCursor] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(toDateKey(new Date()));
+  const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
   const todayKey = toDateKey(new Date());
 
   const eventsByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
-    for (const e of events) {
-      const key = e.date.slice(0, 10);
+    for (const event of events) {
+      const key = event.date.slice(0, 10);
       if (!map[key]) map[key] = [];
-      map[key].push(e);
+      map[key].push(event);
     }
+
+    for (const key of Object.keys(map)) {
+      map[key].sort(compareEvents);
+    }
+
     return map;
   }, [events]);
 
@@ -90,6 +122,12 @@ export default function CalendarView({ events, basePath, title = "Calendar" }: P
       else d.setMonth(d.getMonth() + step);
       return d;
     });
+  }
+
+  function resolveHref(event: CalendarEvent) {
+    if (event.href) return event.href;
+    if (event.kind === "hearing" && basePath) return `${basePath}/${event.id}`;
+    return null;
   }
 
   return (
@@ -126,44 +164,54 @@ export default function CalendarView({ events, basePath, title = "Calendar" }: P
         <div className="overflow-x-auto">
           <div className="min-w-[700px]">
             <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/70 text-xs font-semibold uppercase text-gray-400">
-              {WEEKDAYS.map(d => (
-                <div key={d} className="px-3 py-2">{d}</div>
+              {WEEKDAYS.map(day => (
+                <div key={day} className="px-3 py-2">{day}</div>
               ))}
             </div>
             <div className={`grid grid-cols-7 ${view === "week" ? "" : "auto-rows-[110px]"}`}>
-              {days.map(d => {
-                const key = toDateKey(d);
+              {days.map(day => {
+                const key = toDateKey(day);
                 const isToday = key === todayKey;
-                const inMonth = d.getMonth() === cursor.getMonth();
+                const inMonth = day.getMonth() === cursor.getMonth();
                 const dayEvents = eventsByDate[key] ?? [];
-                const hasOverdue = dayEvents.some(e => e.overdue);
+                const hasOverdue = dayEvents.some(event => event.overdue);
+                const hasTasks = dayEvents.some(event => event.kind === "task");
+
                 return (
-                  <button
+                  <div
                     key={key}
                     onClick={() => setSelectedDate(key)}
                     className={`border-b border-r border-gray-100 p-2.5 text-left transition-colors ${
                       selectedDate === key ? "bg-navy-50/60" : "bg-white"
                     } ${!inMonth && view === "month" ? "text-gray-300" : "text-gray-700"} ${
                       isToday ? "ring-2 ring-navy-200" : hasOverdue ? "ring-2 ring-red-200" : ""
-                    }`}
+                    } cursor-pointer`}
                   >
-                    <div className={`text-xs font-semibold ${isToday ? "text-navy-700" : ""}`}>{d.getDate()}</div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className={`text-xs font-semibold ${isToday ? "text-navy-700" : ""}`}>{day.getDate()}</div>
+                      {hasTasks && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">Task</span>}
+                    </div>
                     <div className="mt-1.5 space-y-1">
-                      {dayEvents.slice(0, 2).map(ev => (
-                        <div
-                          key={`${ev.caseId}-${ev.title}`}
-                          className={`truncate rounded px-1.5 py-0.5 text-xs ${
-                            ev.overdue ? "bg-red-100 text-red-700" : isToday ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-700"
-                          }`}
+                      {dayEvents.slice(0, 2).map(event => (
+                        <button
+                          key={event.id}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedDate(key);
+                            if (event.kind === "task") setActiveEvent(event);
+                          }}
+                          className={`truncate rounded px-1.5 py-0.5 text-xs ${getEventBadgeClass(event, isToday)}`}
                         >
-                          {ev.title}
-                        </div>
+                          {event.kind === "task" ? "Task: " : ""}
+                          {event.title}
+                        </button>
                       ))}
                       {dayEvents.length > 2 && (
                         <div className="text-[11px] text-gray-400">+{dayEvents.length - 2} more</div>
                       )}
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -173,28 +221,115 @@ export default function CalendarView({ events, basePath, title = "Calendar" }: P
 
       <div className="card">
         <div className="card-header">
-          <h2 className="text-sm font-semibold text-gray-700">Hearings on {selectedDate}</h2>
+          <h2 className="text-sm font-semibold text-gray-700">Schedule on {selectedDate}</h2>
         </div>
         <div className="card-body text-sm">
           {!selectedEvents.length ? (
-            <p className="text-gray-400">No hearings scheduled for this date.</p>
+            <p className="text-gray-400">No hearings or task reminders scheduled for this date.</p>
           ) : (
             <ul className="space-y-2">
-              {selectedEvents.map(ev => (
-                <li key={`${ev.caseId}-${ev.title}`} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <Link className="font-medium text-navy-700 hover:underline" href={`${basePath}/${ev.caseId}`}>
-                      {ev.title}
-                    </Link>
-                    {ev.overdue && <span className="ml-2 text-xs font-semibold text-red-600">Overdue</span>}
-                  </div>
-                  <span className="text-xs text-gray-400">{ev.date.slice(0, 10)}</span>
-                </li>
-              ))}
+              {selectedEvents.map(event => {
+                const href = resolveHref(event);
+
+                return (
+                  <li key={event.id} className="flex flex-col gap-2 rounded-2xl border border-gray-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
+                          event.kind === "task" ? "bg-amber-50 text-amber-700" : "bg-navy-50 text-navy-700"
+                        }`}>
+                          {event.kind === "task" ? "Task" : "Hearing"}
+                        </span>
+                        {event.overdue && <span className="text-xs font-semibold text-red-600">Overdue</span>}
+                        {event.completed && <span className="text-xs font-semibold text-emerald-600">Completed</span>}
+                      </div>
+
+                      {event.kind === "task" ? (
+                        <button
+                          type="button"
+                          onClick={() => setActiveEvent(event)}
+                          className="text-left font-medium text-gray-900 transition hover:text-navy-700"
+                        >
+                          {event.title}
+                        </button>
+                      ) : href ? (
+                        <Link className="font-medium text-gray-900 transition hover:text-navy-700 hover:underline" href={href}>
+                          {event.title}
+                        </Link>
+                      ) : (
+                        <p className="font-medium text-gray-900">{event.title}</p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-xs text-gray-400">{formatDate(event.date)}</span>
+                      {href && (
+                        <Link className="text-xs font-semibold text-navy-700 hover:underline" href={href}>
+                          Open
+                        </Link>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
       </div>
+
+      {activeEvent?.kind === "task" && (
+        <div className="fixed bottom-5 right-5 z-40 w-[min(380px,calc(100vw-2rem))] rounded-3xl border border-gray-200 bg-white/95 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.24)] backdrop-blur">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${
+                activeEvent.kind === "task" ? "text-amber-600" : "text-navy-700"
+              }`}>
+                {activeEvent.kind === "task" ? "Task Reminder" : "Case Hearing"}
+              </p>
+              <h2 className="mt-2 text-base font-semibold text-gray-900">{activeEvent.title}</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveEvent(null)}
+              className="rounded-full px-2 py-1 text-xs font-medium text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="mt-4 space-y-3 rounded-2xl bg-gray-50 px-4 py-4 text-sm text-gray-600">
+            <div className="flex items-center justify-between gap-4">
+              <span className="font-medium text-gray-500">Date</span>
+              <span className="text-right text-gray-900">{formatDate(activeEvent.date)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <span className="font-medium text-gray-500">Type</span>
+              <span className="text-right text-gray-900">{activeEvent.kind === "task" ? "Task reminder" : "Case hearing"}</span>
+            </div>
+            {activeEvent.kind === "task" && (
+              <div className="flex items-center justify-between gap-4">
+                <span className="font-medium text-gray-500">Status</span>
+                <span className={`text-right font-medium ${
+                  activeEvent.completed ? "text-emerald-700" : activeEvent.overdue ? "text-red-600" : "text-amber-700"
+                }`}>
+                  {activeEvent.completed ? "Completed" : activeEvent.overdue ? "Overdue" : "Upcoming"}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => setActiveEvent(null)} className="btn-secondary btn-sm">
+              Close
+            </button>
+            {resolveHref(activeEvent) && (
+              <Link href={resolveHref(activeEvent)!} className="btn-primary btn-sm text-center">
+                {activeEvent.actionLabel ?? (activeEvent.kind === "task" ? "Go to tasks" : "Open case")}
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

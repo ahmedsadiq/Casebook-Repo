@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import ProfileSummaryCard from "@/components/ProfileSummaryCard";
-import ProfileForm from "./ProfileForm";
+import ProfileEditorPanel from "@/components/ProfileEditorPanel";
 
 export const metadata = { title: "Profile" };
 
@@ -20,25 +19,14 @@ export default async function AdvocateProfilePage() {
         <h1 className="pg-title">Profile</h1>
         <p className="pg-sub">Manage your account details</p>
       </div>
-      <ProfileSummaryCard
-        fullName={profile?.full_name ?? "Advocate"}
+      <ProfileEditorPanel
+        roleLabel="Advocate"
+        fullName={profile?.full_name ?? ""}
         email={user!.email ?? profile?.email ?? ""}
         phone={profile?.phone ?? ""}
         avatarUrl={profile?.avatar_url ?? ""}
         officeAddress={profile?.office_address ?? ""}
       />
-      <div className="card p-5 sm:p-7">
-        <div className="mb-5 pb-5 border-b border-gray-100">
-          <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-0.5">Email</p>
-          <p className="text-sm text-gray-900">{user!.email}</p>
-        </div>
-        <ProfileForm
-          fullName={profile?.full_name ?? ""}
-          phone={profile?.phone ?? ""}
-          avatarUrl={profile?.avatar_url ?? ""}
-          officeAddress={profile?.office_address ?? ""}
-        />
-      </div>
     </div>
   );
 }

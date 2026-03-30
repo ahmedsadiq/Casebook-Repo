@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/supabase/types";
+import { getDashboardPath } from "@/lib/dashboard-path";
 
 export async function updateSession(request: NextRequest) {
   let res = NextResponse.next({ request });
@@ -36,14 +37,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && pathname === "/auth") {
+  if (user && (pathname === "/" || pathname === "/auth")) {
     const { data: profile } = await supabase
       .from("profiles").select("role").eq("id", user.id).single();
     const url = request.nextUrl.clone();
-    url.pathname =
-      profile?.role === "associate" ? "/associate/dashboard" :
-      profile?.role === "client"    ? "/client/dashboard"    :
-      "/advocate/dashboard";
+    url.pathname = getDashboardPath(profile?.role);
     return NextResponse.redirect(url);
   }
 

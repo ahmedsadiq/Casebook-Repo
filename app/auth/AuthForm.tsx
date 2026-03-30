@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { shouldRequireAdvocateBilling } from "@/lib/advocate-subscription";
+import { getDashboardPath } from "@/lib/dashboard-path";
 
 export default function AuthForm() {
   const router = useRouter();
   const supabase = createClient();
+  const [isNavigating, startNavigation] = useTransition();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,10 +52,10 @@ export default function AuthForm() {
         profile = createdProfile;
       }
 
-      if (profile?.role === "associate") {
-        router.push("/associate/dashboard");
-      } else if (profile?.role === "client") {
-        router.push("/client/dashboard");
+      let nextPath = "";
+
+      if (profile?.role === "associate" || profile?.role === "client") {
+        nextPath = getDashboardPath(profile.role);
       } else {
         const { data: subscription, error: subscriptionError } = await supabase
           .from("advocate_subscriptions")
@@ -63,19 +65,24 @@ export default function AuthForm() {
         if (subscriptionError) throw subscriptionError;
 
         if (shouldRequireAdvocateBilling(subscription)) {
-          router.push("/billing");
+          nextPath = "/billing";
         } else {
-          router.push("/advocate/dashboard");
+          nextPath = "/advocate/dashboard";
         }
       }
 
-      router.refresh();
+      setLoading(false);
+      startNavigation(() => {
+        router.push(nextPath);
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Sign-in failed. Please check your credentials.");
-    } finally {
       setLoading(false);
     }
   }
+
+  const isBusy = loading || isNavigating;
+  const submitLabel = loading ? "Signing in..." : isNavigating ? "Opening dashboard..." : "Sign in";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -112,8 +119,14 @@ export default function AuthForm() {
         />
       </div>
 
-      <button type="submit" className="btn-primary mt-2 w-full py-2.5" disabled={loading}>
-        {loading ? "Signing in..." : "Sign in"}
+      {isBusy && (
+        <p className="text-xs text-gray-500" aria-live="polite">
+          {loading ? "Please wait while we verify your account." : "Please wait while we open your dashboard."}
+        </p>
+      )}
+
+      <button type="submit" className="btn-primary mt-2 w-full py-2.5" disabled={isBusy}>
+        {submitLabel}
       </button>
     </form>
   );

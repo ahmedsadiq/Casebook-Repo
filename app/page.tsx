@@ -1,8 +1,26 @@
 import Link from "next/link";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import { getAdvocatePlanPricing } from "@/lib/advocate-billing";
+import { createClient } from "@/lib/supabase/server";
+import { getDashboardPath } from "@/lib/dashboard-path";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    redirect(getDashboardPath(profile?.role));
+  }
+
   const pricing = getAdvocatePlanPricing();
 
   return (

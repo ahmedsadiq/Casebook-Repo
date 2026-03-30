@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import CaseForm from "../CaseForm";
-import Link from "next/link";
+import BackToCasesLink from "../BackToCasesLink";
 
 export const metadata = { title: "New Case" };
 
@@ -18,7 +18,7 @@ export default async function NewCasePage() {
   return (
     <div className="pg-wrap max-w-2xl">
       <div className="mb-6">
-        <Link href="/advocate/cases" className="text-sm text-gray-400 hover:text-gray-600 mb-1.5 inline-block">← Cases</Link>
+        <BackToCasesLink className="mb-1.5 inline-block text-sm text-gray-400 hover:text-gray-600" label="Back to Cases" />
         <h1 className="pg-title">New Case</h1>
         <p className="pg-sub">Create a new case file</p>
       </div>

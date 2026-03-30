@@ -7,7 +7,9 @@ export const metadata = { title: "Associates" };
 
 export default async function AssociatesPage() {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: associates } = await supabase
     .from("profiles")
@@ -31,7 +33,7 @@ export default async function AssociatesPage() {
             {!associates?.length ? (
               <div className="py-16 text-center">
                 <p className="text-sm text-gray-400">No associates added yet.</p>
-                <p className="mt-1 text-xs text-gray-400">Use the form to invite an associate.</p>
+                <p className="mt-1 text-xs text-gray-400">Use the form to add an associate.</p>
               </div>
             ) : (
               <div className="table-wrap">
@@ -46,19 +48,19 @@ export default async function AssociatesPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {associates.map(a => (
-                      <tr key={a.id} className="trow">
+                    {associates.map((associate) => (
+                      <tr key={associate.id} className="trow">
                         <td className="tcell">
                           <div className="flex min-w-0 items-center gap-2">
-                            <span className="truncate font-medium text-gray-900">{a.full_name ?? "—"}</span>
+                            <span className="truncate font-medium text-gray-900">{associate.full_name ?? "-"}</span>
                             <span className="role-associate shrink-0">associate</span>
                           </div>
                         </td>
-                        <td className="tcell max-w-0 truncate text-gray-600">{a.email ?? "—"}</td>
-                        <td className="tcell text-gray-500">{a.phone ?? "—"}</td>
-                        <td className="tcell text-gray-400">{formatDate(a.created_at)}</td>
+                        <td className="tcell break-all text-gray-600">{associate.email ?? "-"}</td>
+                        <td className="tcell text-gray-500">{associate.phone ?? "-"}</td>
+                        <td className="tcell text-gray-400">{formatDate(associate.created_at)}</td>
                         <td className="tcell text-right">
-                          <DeleteMemberButton memberId={a.id} name={a.full_name ?? "associate"} />
+                          <DeleteMemberButton memberId={associate.id} name={associate.full_name ?? "associate"} />
                         </td>
                       </tr>
                     ))}

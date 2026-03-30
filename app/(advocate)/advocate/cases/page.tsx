@@ -4,8 +4,11 @@ import { formatDate, isDateUpdateRequired, normalizeCaseStatus } from "@/lib/uti
 import { CaseStatusBadge } from "@/components/StatusBadge";
 import CasesFilter from "./CasesFilter";
 import type { CaseStatus } from "@/lib/supabase/types";
+import DeleteCaseButton from "./[id]/DeleteCaseButton";
+import AssignClientControl from "./AssignClientControl";
 
 export const metadata = { title: "Cases" };
+export const dynamic = "force-dynamic";
 
 const VALID_STATUSES: CaseStatus[] = ["Pending", "Decided", "Disposed of", "Date in Office", "Rejected", "Accepted"];
 
@@ -25,18 +28,38 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
   const searchQuery = searchParams.q?.trim().toLowerCase() ?? "";
 
   const cases = (rawCases ?? [])
-    .map(c => ({
-      ...c,
-      status: normalizeCaseStatus(c.status),
-      needs_date_update: isDateUpdateRequired(c.next_hearing_date),
+    .map((caseItem) => ({
+      ...caseItem,
+      status: normalizeCaseStatus(caseItem.status),
+      needs_date_update: isDateUpdateRequired(caseItem.next_hearing_date),
     }))
-    .filter(c => (!statusFilter || c.status === statusFilter) && (!searchQuery || c.title.toLowerCase().includes(searchQuery)));
+    .filter((caseItem) => (!statusFilter || caseItem.status === statusFilter) && (!searchQuery || caseItem.title.toLowerCase().includes(searchQuery)));
 
-  const clientIds = [...new Set(cases.map(c => c.client_id).filter(Boolean) as string[])];
-  const { data: clientProfiles } = clientIds.length
-    ? await supabase.from("profiles").select("id,full_name").in("id", clientIds)
+  const { data: allClients } = await supabase
+    .from("profiles")
+    .select("id,full_name,email")
+    .eq("advocate_id", user!.id)
+    .eq("role", "client")
+    .order("full_name");
+
+  const caseIds = cases.map((caseItem) => caseItem.id);
+  const { data: assignedAssociates } = caseIds.length
+    ? await supabase
+        .from("case_associates")
+        .select("case_id,associate_id,profiles!case_associates_associate_id_fkey(full_name)")
+        .in("case_id", caseIds)
     : { data: [] };
-  const clientMap = Object.fromEntries((clientProfiles ?? []).map(p => [p.id, p.full_name]));
+
+  const clientMap = Object.fromEntries((allClients ?? []).map((client) => [client.id, client.full_name]));
+  const associatesByCase = (assignedAssociates ?? []).reduce<Record<string, string[]>>((acc, row) => {
+    const associateProfile = row.profiles as unknown as { full_name: string | null } | { full_name: string | null }[] | null;
+    const associateName = Array.isArray(associateProfile)
+      ? associateProfile[0]?.full_name ?? "Associate"
+      : associateProfile?.full_name ?? "Associate";
+    if (!acc[row.case_id]) acc[row.case_id] = [];
+    acc[row.case_id].push(associateName);
+    return acc;
+  }, {});
 
   return (
     <div className="pg-wrap">
@@ -62,34 +85,92 @@ export default async function CasesPage({ searchParams }: { searchParams: { q?: 
           </div>
         ) : (
           <div className="table-wrap">
-            <table className="data-table-wide">
+            <table className="w-full min-w-[920px]">
               <thead>
                 <tr className="thead">
-                  <th>Case</th><th>Client</th><th>Status</th><th>Last Hearing</th><th>Next Hearing</th><th></th>
+                  <th className="w-[29%]">Case</th>
+                  <th className="w-[16%]">Client</th>
+                  <th className="w-[20%]">Associates</th>
+                  <th className="w-[12%]">Status</th>
+                  <th className="w-[10%]">Last Hearing</th>
+                  <th className="w-[10%]">Next Hearing</th>
+                  <th className="w-[3%]"></th>
                 </tr>
               </thead>
               <tbody>
-                {cases.map(c => {
-                  const needsUpdate = Boolean(c.needs_date_update);
+                {cases.map((caseItem) => {
+                  const needsUpdate = Boolean(caseItem.needs_date_update);
+                  const associateNames = associatesByCase[caseItem.id] ?? [];
+
                   return (
-                    <tr key={c.id} className="trow">
-                      <td className="tcell">
-                        <Link href={`/advocate/cases/${c.id}`} className="font-medium text-gray-900 hover:text-navy-700">{c.title}</Link>
-                        {c.case_number && <p className="mt-0.5 text-xs text-gray-400">#{c.case_number} {c.court ? `· ${c.court}` : ""}</p>}
+                    <tr key={caseItem.id} className="trow">
+                      <td className="tcell align-top">
+                        <Link href={`/advocate/cases/${caseItem.id}`} className="font-medium text-gray-900 hover:text-navy-700">
+                          {caseItem.title}
+                        </Link>
+                        {caseItem.case_number && (
+                          <p className="mt-0.5 text-xs leading-5 text-gray-400">
+                            #{caseItem.case_number} {caseItem.court ? `· ${caseItem.court}` : ""}
+                          </p>
+                        )}
                         {needsUpdate && (
                           <span className="mt-1.5 inline-flex rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
                             Action Required - Date Not Updated
                           </span>
                         )}
                       </td>
-                      <td className="tcell text-gray-600">{c.client_id ? (clientMap[c.client_id] ?? <span className="text-gray-300">—</span>) : <span className="text-gray-300">—</span>}</td>
-                      <td className="tcell"><CaseStatusBadge status={c.status} /></td>
-                      <td className="tcell text-gray-500">{formatDate(c.last_hearing_date)}</td>
-                      <td className={`tcell ${needsUpdate ? "text-red-600 font-semibold" : "text-gray-500"}`}>
-                        {formatDate(c.next_hearing_date)}
+                      <td className="tcell align-top text-gray-600">
+                        <div className="space-y-1">
+                          <p className={`leading-5 ${caseItem.client_id && clientMap[caseItem.client_id] ? "" : "text-gray-400"}`}>
+                            {caseItem.client_id && clientMap[caseItem.client_id] ? clientMap[caseItem.client_id] : "No client assigned"}
+                          </p>
+                          {!caseItem.client_id && (
+                            <AssignClientControl
+                              caseId={caseItem.id}
+                              currentClientId={caseItem.client_id}
+                              clients={allClients ?? []}
+                              compact
+                            />
+                          )}
+                        </div>
                       </td>
-                      <td className="tcell text-right">
-                        <Link href={`/advocate/cases/${c.id}/edit`} className="btn-secondary btn-sm">Edit</Link>
+                      <td className="tcell align-top text-gray-600">
+                        {associateNames.length ? (
+                          <div className="flex max-w-full flex-wrap gap-1.5">
+                            {associateNames.slice(0, 2).map((name) => (
+                              <span
+                                key={`${caseItem.id}-${name}`}
+                                className="inline-flex max-w-full items-center rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold leading-tight text-violet-700"
+                              >
+                                {name}
+                              </span>
+                            ))}
+                            {associateNames.length > 2 && (
+                              <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-500">
+                                +{associateNames.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">No associate assigned</span>
+                        )}
+                      </td>
+                      <td className="tcell align-top">
+                        <div className="flex min-h-[2.25rem] items-start">
+                          <CaseStatusBadge status={caseItem.status} />
+                        </div>
+                      </td>
+                      <td className="tcell align-top whitespace-nowrap text-gray-500">
+                        {caseItem.last_hearing_date ? formatDate(caseItem.last_hearing_date) : <span className="text-gray-300">-</span>}
+                      </td>
+                      <td className={`tcell align-top whitespace-nowrap ${needsUpdate ? "text-red-600 font-semibold" : "text-gray-500"}`}>
+                        {formatDate(caseItem.next_hearing_date)}
+                      </td>
+                      <td className="tcell align-top text-right">
+                        <div className="flex items-start justify-end gap-2 whitespace-nowrap">
+                          <Link href={`/advocate/cases/${caseItem.id}/edit`} className="btn-secondary btn-sm">Edit</Link>
+                          <DeleteCaseButton caseId={caseItem.id} caseTitle={caseItem.title} />
+                        </div>
                       </td>
                     </tr>
                   );

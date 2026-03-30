@@ -74,6 +74,7 @@ export interface CaseDocument {
 export interface Task {
   id: string;
   user_id: string;
+  case_id: string | null;
   title: string;
   due_date: string | null;
   completed: boolean;

@@ -6,7 +6,7 @@ import TasksWidget from "@/components/TasksWidget";
 
 export const metadata = { title: "Dashboard" };
 
-export default async function AdvocateDashboard() {
+export default async function AdvocateDashboard({ searchParams }: { searchParams?: { taskCaseId?: string } }) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const today = new Date().toISOString().slice(0, 10);
@@ -20,9 +20,9 @@ export default async function AdvocateDashboard() {
   ] = await Promise.all([
     supabase.from("cases").select("*").eq("advocate_id", user!.id).order("created_at", { ascending: false }),
     supabase.from("profiles").select("id").eq("advocate_id", user!.id).eq("role", "client"),
-    supabase.from("profiles").select("id").eq("advocate_id", user!.id).eq("role", "associate"),
+    supabase.from("profiles").select("id,full_name,email").eq("advocate_id", user!.id).eq("role", "associate").order("full_name"),
     supabase.from("payments").select("status,amount").eq("advocate_id", user!.id),
-    supabase.from("tasks").select("id,title,due_date,completed,created_at").eq("user_id", user!.id).order("created_at", { ascending: false }),
+    supabase.from("tasks").select("id,title,due_date,completed,created_at,case_id").eq("user_id", user!.id).order("created_at", { ascending: false }),
   ]);
 
   const cases = (rawCases ?? []).map(c => ({
@@ -40,6 +40,10 @@ export default async function AdvocateDashboard() {
   const recentCases = [...cases]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 5);
+  const caseOptions = cases.map(c => ({ id: c.id, title: c.title }));
+  const initialTaskCaseId = searchParams?.taskCaseId && caseOptions.some(option => option.id === searchParams.taskCaseId)
+    ? searchParams.taskCaseId
+    : "";
 
   const clientIds = [...new Set([...todayCases, ...pendingCases].map(c => c.client_id).filter(Boolean) as string[])];
   const { data: clientProfiles } = clientIds.length
@@ -206,7 +210,12 @@ export default async function AdvocateDashboard() {
       </div>
 
       <div className="mt-6">
-        <TasksWidget initialTasks={(tasks ?? []) as { id: string; title: string; due_date: string | null; completed: boolean; created_at: string }[]} />
+        <TasksWidget
+          initialTasks={(tasks ?? []) as { id: string; title: string; due_date: string | null; completed: boolean; created_at: string; case_id: string | null }[]}
+          caseOptions={caseOptions}
+          casePathBase="/advocate/cases"
+          initialSelectedCaseId={initialTaskCaseId}
+        />
       </div>
     </div>
   );

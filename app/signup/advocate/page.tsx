@@ -41,7 +41,7 @@ export default function AdvocateSignupPage() {
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-navy-100">Exchange Rate</p>
-              <p className="mt-2 text-2xl font-semibold">Rs {pricing.usdToPkrRate}</p>
+              <p className="mt-2 text-2xl font-semibold">PKR {pricing.usdToPkrRate}</p>
             </div>
           </div>
 

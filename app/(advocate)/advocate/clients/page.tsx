@@ -7,7 +7,9 @@ export const metadata = { title: "Clients" };
 
 export default async function ClientsPage() {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: clients } = await supabase
     .from("profiles")
@@ -45,19 +47,19 @@ export default async function ClientsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {clients.map(c => (
-                      <tr key={c.id} className="trow">
+                    {clients.map((client) => (
+                      <tr key={client.id} className="trow">
                         <td className="tcell">
                           <div className="flex min-w-0 items-center gap-2">
-                            <span className="truncate font-medium text-gray-900">{c.full_name ?? "—"}</span>
+                            <span className="truncate font-medium text-gray-900">{client.full_name ?? "-"}</span>
                             <span className="role-client shrink-0">client</span>
                           </div>
                         </td>
-                        <td className="tcell max-w-0 truncate text-gray-600">{c.email ?? "—"}</td>
-                        <td className="tcell text-gray-500">{c.phone ?? "—"}</td>
-                        <td className="tcell text-gray-400">{formatDate(c.created_at)}</td>
+                        <td className="tcell break-all text-gray-600">{client.email ?? "-"}</td>
+                        <td className="tcell text-gray-500">{client.phone ?? "-"}</td>
+                        <td className="tcell text-gray-400">{formatDate(client.created_at)}</td>
                         <td className="tcell text-right">
-                          <DeleteMemberButton memberId={c.id} name={c.full_name ?? "client"} />
+                          <DeleteMemberButton memberId={client.id} name={client.full_name ?? "client"} />
                         </td>
                       </tr>
                     ))}

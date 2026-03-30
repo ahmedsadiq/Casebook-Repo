@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import CaseForm from "../../CaseForm";
+import BackToCasesLink from "../../BackToCasesLink";
 
 export const metadata = { title: "Edit Case" };
 
@@ -19,7 +19,7 @@ export default async function EditCasePage({ params }: { params: { id: string } 
   return (
     <div className="pg-wrap max-w-2xl">
       <div className="mb-6">
-        <Link href={`/advocate/cases/${c.id}`} className="text-sm text-gray-400 hover:text-gray-600 mb-1.5 inline-block">← Back to Case</Link>
+        <BackToCasesLink className="mb-1.5 inline-block text-sm text-gray-400 hover:text-gray-600" label="Back to Cases" />
         <h1 className="pg-title">Edit Case</h1>
       </div>
       <div className="card p-7">

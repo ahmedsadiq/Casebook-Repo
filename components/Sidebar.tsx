@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { UserRole } from "@/lib/supabase/types";
+import { getDashboardPath } from "@/lib/dashboard-path";
 
 const NAV: Record<UserRole, { href: string; label: string }[]> = {
   advocate: [
@@ -15,6 +16,7 @@ const NAV: Record<UserRole, { href: string; label: string }[]> = {
     { href: "/advocate/clients", label: "Clients" },
     { href: "/advocate/associates", label: "Associates" },
     { href: "/advocate/profile", label: "Profile" },
+    { href: "/advocate/ask-expert", label: "Ask an Expert" },
   ],
   associate: [
     { href: "/associate/dashboard", label: "Dashboard" },
@@ -51,6 +53,9 @@ function UserIcon() {
 function CalendarIcon() {
   return <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" /><path strokeLinecap="round" d="M8 2v4M16 2v4M3 10h18" /></svg>;
 }
+function SparkIcon() {
+  return <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15zM5 14l.9 2.1L8 17l-2.1.9L5 20l-.9-2.1L2 17l2.1-.9L5 14z" /></svg>;
+}
 
 const ICON_MAP: Record<string, React.FC> = {
   Dashboard: DashIcon,
@@ -60,6 +65,7 @@ const ICON_MAP: Record<string, React.FC> = {
   Associates: ClientsIcon,
   Profile: UserIcon,
   Calendar: CalendarIcon,
+  "Ask an Expert": SparkIcon,
 };
 
 export default function Sidebar({ fullName, role }: { fullName: string | null; role: UserRole }) {
@@ -67,6 +73,7 @@ export default function Sidebar({ fullName, role }: { fullName: string | null; r
   const router = useRouter();
   const supabase = createClient();
   const nav = NAV[role];
+  const dashboardHref = getDashboardPath(role);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -117,10 +124,10 @@ export default function Sidebar({ fullName, role }: { fullName: string | null; r
   return (
     <aside className="w-full shrink-0 border-b border-gray-200 bg-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-56 lg:flex-col lg:border-b-0 lg:border-r">
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-4 sm:px-5 sm:py-5 lg:hidden">
-        <div className="flex items-center gap-2.5">
+        <Link href={dashboardHref} className="flex items-center gap-2.5">
           <Image src="/app-icon.jpg" alt="Casebook" width={28} height={28} className="rounded-lg" />
           <span className="font-semibold tracking-tight text-gray-900">Casebook</span>
-        </div>
+        </Link>
         <button
           type="button"
           onClick={() => setMobileOpen(open => !open)}
@@ -160,10 +167,10 @@ export default function Sidebar({ fullName, role }: { fullName: string | null; r
 
       <div className="hidden h-full lg:flex lg:flex-1 lg:flex-col">
         <div className="border-b border-gray-100 px-4 py-4 sm:px-5 sm:py-5">
-          <div className="flex items-center gap-2.5">
+          <Link href={dashboardHref} className="flex items-center gap-2.5">
             <Image src="/app-icon.jpg" alt="Casebook" width={28} height={28} className="rounded-lg" />
             <span className="font-semibold tracking-tight text-gray-900">Casebook</span>
-          </div>
+          </Link>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">

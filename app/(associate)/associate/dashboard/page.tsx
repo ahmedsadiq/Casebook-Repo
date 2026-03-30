@@ -22,7 +22,7 @@ export default async function AssociateDashboard() {
     caseIds.length
       ? supabase.from("cases").select("*").in("id", caseIds).order("updated_at", { ascending: false })
       : Promise.resolve({ data: [] }),
-    supabase.from("tasks").select("id,title,due_date,completed,created_at").eq("user_id", user!.id).order("created_at", { ascending: false }),
+    supabase.from("tasks").select("id,title,due_date,completed,created_at,case_id").eq("user_id", user!.id).order("created_at", { ascending: false }),
   ]);
 
   const cases = (rawCases ?? []).map(c => ({
@@ -40,6 +40,7 @@ export default async function AssociateDashboard() {
   const recentCases = [...cases]
     .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
     .slice(0, 8);
+  const caseOptions = cases.map(c => ({ id: c.id, title: c.title }));
 
   const clientIds = [...new Set([...todayCases, ...pendingCases].map(c => c.client_id).filter(Boolean) as string[])];
   const { data: clientProfiles } = clientIds.length
@@ -170,7 +171,11 @@ export default async function AssociateDashboard() {
       </div>
 
       <div className="mt-6">
-        <TasksWidget initialTasks={(tasks ?? []) as { id: string; title: string; due_date: string | null; completed: boolean; created_at: string }[]} />
+        <TasksWidget
+          initialTasks={(tasks ?? []) as { id: string; title: string; due_date: string | null; completed: boolean; created_at: string; case_id: string | null }[]}
+          caseOptions={caseOptions}
+          casePathBase="/associate/cases"
+        />
       </div>
     </div>
   );

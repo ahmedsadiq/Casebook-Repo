@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import CalendarView from "@/components/CalendarView";
+import CalendarView, { type CalendarEvent } from "@/components/CalendarView";
 import { isDateUpdateRequired, normalizeCaseStatus } from "@/lib/utils";
 
 export const metadata = { title: "Calendar" };
@@ -23,7 +23,7 @@ export default async function AssociateCalendarPage() {
         .order("next_hearing_date", { ascending: true })
     : { data: [] };
 
-  const events = (rawCases ?? [])
+  const events: CalendarEvent[] = (rawCases ?? [])
     .map(c => ({
       ...c,
       status: normalizeCaseStatus(c.status),
@@ -31,9 +31,11 @@ export default async function AssociateCalendarPage() {
     }))
     .filter(c => c.status !== "Disposed of" && c.next_hearing_date)
     .map(c => ({
+      id: c.id,
       date: c.next_hearing_date as string,
       title: c.title,
-      caseId: c.id,
+      kind: "hearing" as const,
+      href: `/associate/cases/${c.id}`,
       overdue: c.needs_date_update,
     }));
 

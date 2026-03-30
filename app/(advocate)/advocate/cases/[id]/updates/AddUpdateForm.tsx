@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CaseStatus } from "@/lib/supabase/types";
 import { normalizeCaseStatus } from "@/lib/utils";
+
+const MAX_DOCUMENT_SIZE = 20 * 1024 * 1024;
 
 interface Props {
   caseId: string;
@@ -16,13 +18,14 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
   const router = useRouter();
   const supabase = createClient();
   const normalizedCurrentStatus = normalizeCaseStatus(currentStatus);
+  const [isNavigating, startNavigation] = useTransition();
 
-  const [content,     setContent]     = useState("");
+  const [content, setContent] = useState("");
   const [hearingDate, setHearingDate] = useState("");
-  const [newStatus,   setNewStatus]   = useState<CaseStatus>(normalizedCurrentStatus);
-  const [file,        setFile]        = useState<File | null>(null);
-  const [loading,     setLoading]     = useState(false);
-  const [error,       setError]       = useState<string | null>(null);
+  const [newStatus, setNewStatus] = useState<CaseStatus>(normalizedCurrentStatus);
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function getErrorMessage(err: unknown): string {
     if (!err) return "Something went wrong.";
@@ -41,7 +44,15 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!content.trim()) { setError("Please enter an update note."); return; }
+    if (!content.trim()) {
+      setError("Please enter an update note.");
+      return;
+    }
+    if (newStatus === "Pending" && !hearingDate) {
+      setError("Next hearing date is required when the case status is Pending.");
+      return;
+    }
+
     setError(null);
     setLoading(true);
 
@@ -49,16 +60,14 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw { code: "AUTH" };
 
-      // 1. Insert case update
       const { error: updateError } = await supabase.from("case_updates").insert({
-        case_id:      caseId,
-        author_id:    user.id,
-        content:      content.trim(),
+        case_id: caseId,
+        author_id: user.id,
+        content: content.trim(),
         hearing_date: hearingDate || null,
       });
       if (updateError) throw updateError;
 
-      // 2. Update case status / hearing dates
       let previousNext: string | null = null;
       if (hearingDate) {
         const { data: currentCase, error: currentCaseError } = await supabase
@@ -78,38 +87,44 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
       }
 
       if (Object.keys(updatePayload).length) {
-        const { error: statusError } = await supabase.from("cases")
+        const { error: statusError } = await supabase
+          .from("cases")
           .update(updatePayload)
           .eq("id", caseId);
         if (statusError) throw statusError;
       }
 
-      // 3. Upload document if provided
       if (file) {
-        const ext  = file.name.split(".").pop();
+        const ext = file.name.split(".").pop();
         const path = `${caseId}/${Date.now()}.${ext}`;
         const { error: uploadError } = await supabase.storage
-          .from("case-documents").upload(path, file);
+          .from("case-documents")
+          .upload(path, file);
         if (uploadError) throw uploadError;
 
         const { error: docError } = await supabase.from("case_documents").insert({
-          case_id:      caseId,
-          uploader_id:  user.id,
-          name:         file.name,
+          case_id: caseId,
+          uploader_id: user.id,
+          name: file.name,
           storage_path: path,
-          size_bytes:   file.size,
+          size_bytes: file.size,
         });
         if (docError) throw docError;
       }
 
-      router.push(redirectPath);
-      router.refresh();
+      setLoading(false);
+      startNavigation(() => {
+        router.push(redirectPath);
+      });
     } catch (err: unknown) {
       setError(getErrorMessage(err));
-    } finally {
       setLoading(false);
     }
   }
+
+  const isBusy = loading || isNavigating;
+  const isPendingStatus = newStatus === "Pending";
+  const submitLabel = loading ? "Saving update..." : isNavigating ? "Opening case..." : "Save Update";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -117,15 +132,20 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
 
       <div>
         <label className="label">Update note <span className="text-red-400">*</span></label>
-        <textarea className="input resize-none" rows={5}
-          placeholder="Describe what happened, decisions made, next steps…"
-          value={content} onChange={e => setContent(e.target.value)} required />
+        <textarea
+          className="input resize-none"
+          rows={5}
+          placeholder="Describe what happened, decisions made, next steps..."
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          required
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className="label">Update case status</label>
-          <select className="input" value={newStatus} onChange={e => setNewStatus(e.target.value as CaseStatus)}>
+          <select className="input" value={newStatus} onChange={(e) => setNewStatus(e.target.value as CaseStatus)}>
             <option value="Pending">Pending</option>
             <option value="Decided">Decided</option>
             <option value="Disposed of">Disposed of</option>
@@ -134,27 +154,60 @@ export default function AddUpdateForm({ caseId, currentStatus, redirectPath }: P
             <option value="Accepted">Accepted</option>
           </select>
           {newStatus !== normalizedCurrentStatus && (
-            <p className="text-xs text-amber-600 mt-1">Status will change from <strong>{normalizedCurrentStatus}</strong> to <strong>{newStatus}</strong></p>
+            <p className="mt-1 text-xs text-amber-600">
+              Status will change from <strong>{normalizedCurrentStatus}</strong> to <strong>{newStatus}</strong>
+            </p>
           )}
         </div>
         <div>
-          <label className="label">Next hearing date</label>
-          <input type="date" className="input" value={hearingDate}
-            onChange={e => setHearingDate(e.target.value)} />
+          <label className="label">
+            Next hearing date {isPendingStatus && <span className="text-red-400">*</span>}
+          </label>
+          <input
+            type="date"
+            className="input"
+            value={hearingDate}
+            onChange={(e) => setHearingDate(e.target.value)}
+            required={isPendingStatus}
+          />
+          {isPendingStatus && (
+            <p className="mt-1 text-xs text-amber-600">Pending cases must have a next hearing date.</p>
+          )}
         </div>
       </div>
 
       <div>
-        <label className="label">Attach document <span className="text-xs text-gray-400 font-normal">(optional)</span></label>
-        <input type="file" className="input py-2 cursor-pointer file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-navy-50 file:text-navy-700 hover:file:bg-navy-100"
-          onChange={e => setFile(e.target.files?.[0] ?? null)} />
+        <label className="label">Attach document <span className="text-xs font-normal text-gray-400">(optional)</span></label>
+        <input
+          type="file"
+          className="input cursor-pointer py-2 file:mr-3 file:rounded-md file:border-0 file:bg-navy-50 file:px-3 file:py-1 file:text-xs file:font-medium file:text-navy-700 hover:file:bg-navy-100"
+          onChange={(e) => {
+            const selectedFile = e.target.files?.[0] ?? null;
+            if (selectedFile && selectedFile.size > MAX_DOCUMENT_SIZE) {
+              setError("Document must be smaller than 20MB.");
+              setFile(null);
+              e.target.value = "";
+              return;
+            }
+            setError(null);
+            setFile(selectedFile);
+          }}
+        />
+        <p className="mt-1 text-xs text-gray-400">Maximum file size: 20MB</p>
       </div>
 
       <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center">
-        <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? "Saving…" : "Save Update"}
+        {isBusy && (
+          <p className="text-xs text-gray-500" aria-live="polite">
+            {loading ? "Please wait while we save the update." : "Please wait while we open the case page."}
+          </p>
+        )}
+        <button type="submit" className="btn-primary" disabled={isBusy}>
+          {submitLabel}
         </button>
-        <button type="button" className="btn-secondary" onClick={() => router.back()} disabled={loading}>Cancel</button>
+        <button type="button" className="btn-secondary" onClick={() => router.back()} disabled={isBusy}>
+          Cancel
+        </button>
       </div>
     </form>
   );

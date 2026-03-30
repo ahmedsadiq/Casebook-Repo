@@ -40,7 +40,7 @@ export default async function BillingPage({
 
   const pricing = getAdvocatePlanPricing();
   const monthlyLabel = gatedSubscription.amount_pkr
-    ? `Rs ${new Intl.NumberFormat("en-PK").format(gatedSubscription.amount_pkr)}`
+    ? `PKR ${new Intl.NumberFormat("en-PK").format(gatedSubscription.amount_pkr)}`
     : pricing.monthlyPkrLabel;
 
   return (

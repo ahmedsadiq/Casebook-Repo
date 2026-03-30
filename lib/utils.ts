@@ -52,7 +52,7 @@ export function formatCurrency(n: number): string {
     maximumFractionDigits: 2,
   }).format(n);
 
-  return `Rs ${formattedNumber}`;
+  return `PKR ${formattedNumber}`;
 }
 
 export function formatFileSize(bytes: number | null): string {

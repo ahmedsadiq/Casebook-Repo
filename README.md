@@ -36,6 +36,7 @@ Advocate signup now uses Stripe Checkout and bills monthly in PKR.
 2. Create a Stripe webhook endpoint for `/api/stripe/webhook`.
 3. Start advocate signup from `/signup/advocate`.
 4. Associates and clients are still created by the advocate after signup.
+5. To enable the advocate AI chat, add `ANTHROPIC_API_KEY` and optionally `ANTHROPIC_MODEL`.
 
 ### 5. Local development
 
@@ -56,6 +57,8 @@ STRIPE_SECRET_KEY=sk_test_your_secret_key
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 ADVOCATE_MONTHLY_USD=5
 USD_TO_PKR_RATE=280
+ANTHROPIC_API_KEY=your-anthropic-api-key
+ANTHROPIC_MODEL=claude-sonnet-4-20250514
 ```
 
 ### 6. Deploy
@@ -88,6 +91,7 @@ Set the same environment variables in your hosting platform.
 | `/advocate/clients` | List, add, and remove clients |
 | `/advocate/associates` | List, add, and remove associates |
 | `/advocate/profile` | Update profile |
+| `/advocate/ask-expert` | Chat with Claude for advocate workflow support |
 
 ### Associate
 
